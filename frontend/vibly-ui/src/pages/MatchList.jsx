@@ -35,19 +35,45 @@ function MatchList() {
         console.log(`Found ${matchesList.length} matches`);
         
         // Remove duplicates based on userId using Map for better performance
+        // Also handle cases where userId might be undefined or null
         const uniqueMap = new Map();
+        const seenUserIds = new Set();
+        
         matchesList.forEach(match => {
-          if (match.userId && !uniqueMap.has(match.userId)) {
-            uniqueMap.set(match.userId, match);
+          // Skip if no userId
+          if (!match || !match.userId) {
+            console.warn("Match without userId found:", match);
+            return;
           }
+          
+          // Skip if we've already seen this userId
+          if (seenUserIds.has(match.userId)) {
+            console.log(`Skipping duplicate match: ${match.userId} (${match.name || 'Unknown'})`);
+            return;
+          }
+          
+          // Add to both Map and Set for tracking
+          uniqueMap.set(match.userId, match);
+          seenUserIds.add(match.userId);
         });
+        
         const uniqueMatches = Array.from(uniqueMap.values());
         console.log(`Found ${matchesList.length} matches, ${uniqueMatches.length} unique after deduplication`);
         console.log("Unique match IDs:", uniqueMatches.map(m => m.userId));
-        setMatches(uniqueMatches);
-        if (uniqueMatches.length > 0) {
+        
+        // Additional check: filter out any remaining duplicates by userId
+        const finalMatches = uniqueMatches.filter((match, index, self) => 
+          index === self.findIndex(m => m.userId === match.userId)
+        );
+        
+        if (finalMatches.length !== uniqueMatches.length) {
+          console.warn(`Additional duplicates found! ${uniqueMatches.length} -> ${finalMatches.length}`);
+        }
+        
+        setMatches(finalMatches);
+        if (finalMatches.length > 0) {
           // Fetch preferences for all matches
-          uniqueMatches.forEach(match => {
+          finalMatches.forEach(match => {
             fetchMatchDetails(match.userId);
           });
           

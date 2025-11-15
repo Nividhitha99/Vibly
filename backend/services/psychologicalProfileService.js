@@ -7,7 +7,7 @@ const itemAnalysisService = require("./itemAnalysisService");
 const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
 
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 /**
  * Analyze entertainment preferences and extract psychological traits
@@ -132,7 +132,14 @@ exports.generatePsychologicalEmbeddingText = async (movies, music, shows) => {
       .flatMap(m => m.genres || [])
       .filter((v, i, a) => a.indexOf(v) === i);
 
-    // Build rich text that includes both content and psychological meaning
+    // Build rich text that includes content, psychological, cultural, thematic, and regional meaning
+    const culturalInfo = profile.culturalProfile ? 
+      `Cultures: ${(profile.culturalProfile.preferredCultures || []).join(", ") || "None"}` : "";
+    const thematicInfo = profile.thematicProfile ? 
+      `Themes: ${(profile.thematicProfile.preferredThemes || []).join(", ") || "None"}` : "";
+    const regionalInfo = profile.regionalProfile ? 
+      `Regions: ${(profile.regionalProfile.preferredRegions || []).join(", ") || "None"}` : "";
+
     const text = `
 Entertainment Preferences:
 Movies: ${movieTitles.join(", ") || "None"}
@@ -145,6 +152,11 @@ Traits: ${profile.traits?.join(", ") || "Unknown"}
 Summary: ${profile.psychologicalSummary || "No analysis available"}
 Emotional Profile: Energy ${profile.emotionalProfile?.energyLevel || "medium"}, Intensity ${profile.emotionalProfile?.emotionalIntensity || "medium"}, Coping ${profile.emotionalProfile?.stressCoping || "active"}, Social ${profile.emotionalProfile?.socialOrientation || "ambivert"}
 Insights: ${profile.personalityInsights?.join(". ") || "No insights available"}
+
+Cultural & Regional Profile:
+${culturalInfo}
+${thematicInfo}
+${regionalInfo}
 `.trim();
 
     return text;

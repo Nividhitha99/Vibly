@@ -100,6 +100,11 @@ exports.generateEmbedding = async (userId, movies, music, shows) => {
 
     // Save embedding in LowDB
     const db = await getDb();
+    
+    // Remove any existing duplicates first
+    db.data.embeddings = db.data.embeddings.filter(e => e.userId !== userId);
+    
+    // Find if there's an existing entry (should be none after filter, but check anyway)
     const existing = db.data.embeddings.find(e => e.userId === userId);
 
     // Also save the psychological profile for reference
@@ -120,6 +125,16 @@ exports.generateEmbedding = async (userId, movies, music, shows) => {
     }
 
     await db.write();
+    
+    // Verify no duplicates
+    const duplicates = db.data.embeddings.filter(e => e.userId === userId);
+    if (duplicates.length > 1) {
+      console.warn(`[Embedding] WARNING: Found ${duplicates.length} embeddings for user ${userId}, removing duplicates`);
+      db.data.embeddings = db.data.embeddings.filter((e, index, self) => 
+        index === self.findIndex(emb => emb.userId === e.userId)
+      );
+      await db.write();
+    }
 
     console.log(`[Embedding] Saved successfully for user ${userId} with ${psychologicalProfile.traits?.length || 0} psychological traits`);
     return vector;

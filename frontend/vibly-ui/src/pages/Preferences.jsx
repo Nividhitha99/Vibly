@@ -1,12 +1,43 @@
 import React, { useState } from "react";
 import TasteSelector from "../components/TasteSelector";
+import GeminiLoading from "../components/GeminiLoading";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function Preferences() {
   const [movies, setMovies] = useState([]);
   const [tv, setTv] = useState([]);
   const [music, setMusic] = useState([]);
   const [activeTab, setActiveTab] = useState("movies");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
+
+  const checkForMatches = async (userId, minWaitTime = 8000, maxAttempts = 30, delay = 2000) => {
+    const startTime = Date.now();
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const res = await axios.get(`http://localhost:5001/api/match/${userId}`);
+        const matches = res.data.matches || [];
+        
+        const elapsed = Date.now() - startTime;
+        
+        // Wait at least minWaitTime (8 seconds) to show the loading screen
+        // Then check if we have matches or enough attempts
+        if (elapsed >= minWaitTime && (matches.length > 0 || attempt >= 10)) {
+          return true;
+        }
+        
+        // Wait before next attempt
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } catch (err) {
+        console.error("Error checking matches:", err);
+        // Continue trying
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    return true; // Proceed anyway after max attempts
+  };
 
   const handleSubmit = async () => {
     try {
@@ -18,6 +49,13 @@ function Preferences() {
         return;
       }
 
+      // Show Gemini loading screen - use setTimeout to ensure React renders it
+      setIsProcessing(true);
+      
+      // Force a small delay to ensure the loading screen renders
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Save preferences
       await axios.post("http://localhost:5001/api/user/preferences", {
         userId,
         movies,
@@ -25,14 +63,24 @@ function Preferences() {
         music,
       });
 
-      alert("Preferences saved!");
-      window.location.href = "/match-list";
+      // Wait for Gemini to process (embedding generation and matching)
+      // Minimum 8 seconds wait time to show the loading screen properly
+      await checkForMatches(userId, 8000, 30, 2000);
+
+      // Navigate to match list
+      navigate("/match-list");
     } catch (err) {
       console.error(err);
+      setIsProcessing(false);
       const errorMessage = err.response?.data?.error || "Error saving preferences";
       alert(errorMessage);
     }
   };
+
+  // Show Gemini loading screen while processing
+  if (isProcessing) {
+    return <GeminiLoading message="Gemini is finding your matches" />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0f172a] flex flex-col items-center pt-12 text-white">

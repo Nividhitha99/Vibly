@@ -28,8 +28,26 @@ exports.getMatches = async (userId) => {
   const results = [];
 
   console.log(`[Matching] Checking ${allEmbeddings.length} embeddings for matches...`);
+  
+  // Remove duplicate embeddings early - keep only the first occurrence of each userId
+  const seenEmbeddingUserIds = new Set();
+  const uniqueEmbeddings = [];
+  for (const emb of allEmbeddings) {
+    if (!emb.userId) continue;
+    const normalizedId = String(emb.userId).trim();
+    if (!seenEmbeddingUserIds.has(normalizedId)) {
+      seenEmbeddingUserIds.add(normalizedId);
+      uniqueEmbeddings.push(emb);
+    } else {
+      console.log(`[Matching] Skipping duplicate embedding for userId: ${normalizedId}`);
+    }
+  }
+  
+  if (uniqueEmbeddings.length !== allEmbeddings.length) {
+    console.log(`[Matching] Removed ${allEmbeddings.length - uniqueEmbeddings.length} duplicate embeddings`);
+  }
 
-  for (let other of allEmbeddings) {
+  for (let other of uniqueEmbeddings) {
     if (other.userId === userId) {
       console.log(`[Matching] Skipping self: ${other.userId}`);
       continue;
@@ -115,6 +133,96 @@ exports.getMatches = async (userId) => {
         if (compatibilityMatch > 0) {
           score += (compatibilityMatch / Math.max(currentIdeal.size, 1)) * 0.1; // Up to 10% boost
           console.log(`[Matching] Compatibility factor match: ${compatibilityMatch} traits`);
+        }
+      }
+    }
+
+    // -----------------------------------
+    // CULTURAL MATCHING
+    // -----------------------------------
+    if (currentProfile.culturalProfile && otherProfile.culturalProfile) {
+      const currentCultures = new Set((currentProfile.culturalProfile.preferredCultures || []).map(c => c.toLowerCase()));
+      const otherCultures = new Set((otherProfile.culturalProfile.preferredCultures || []).map(c => c.toLowerCase()));
+      
+      if (currentCultures.size > 0 && otherCultures.size > 0) {
+        const culturalOverlap = [...currentCultures].filter(c => otherCultures.has(c)).length;
+        const totalUniqueCultures = new Set([...currentCultures, ...otherCultures]).size;
+        const culturalSimilarity = totalUniqueCultures > 0 ? culturalOverlap / totalUniqueCultures : 0;
+        
+        if (culturalSimilarity > 0) {
+          score += culturalSimilarity * 0.12; // Up to 12% boost for cultural match
+          console.log(`[Matching] Cultural overlap: ${culturalOverlap}/${totalUniqueCultures} (${(culturalSimilarity * 100).toFixed(1)}%)`);
+        }
+        
+        // Check cultural compatibility from compatibility factors
+        if (currentProfile.compatibilityFactors?.culturalCompatibility) {
+          const currentCulturalCompat = new Set((currentProfile.compatibilityFactors.culturalCompatibility || []).map(c => c.toLowerCase()));
+          const culturalCompatMatch = [...currentCulturalCompat].filter(c => otherCultures.has(c)).length;
+          
+          if (culturalCompatMatch > 0) {
+            score += (culturalCompatMatch / Math.max(currentCulturalCompat.size, 1)) * 0.08; // Up to 8% boost
+            console.log(`[Matching] Cultural compatibility match: ${culturalCompatMatch} cultures`);
+          }
+        }
+      }
+    }
+
+    // -----------------------------------
+    // THEMATIC MATCHING
+    // -----------------------------------
+    if (currentProfile.thematicProfile && otherProfile.thematicProfile) {
+      const currentThemes = new Set((currentProfile.thematicProfile.preferredThemes || []).map(t => t.toLowerCase()));
+      const otherThemes = new Set((otherProfile.thematicProfile.preferredThemes || []).map(t => t.toLowerCase()));
+      
+      if (currentThemes.size > 0 && otherThemes.size > 0) {
+        const thematicOverlap = [...currentThemes].filter(t => otherThemes.has(t)).length;
+        const totalUniqueThemes = new Set([...currentThemes, ...otherThemes]).size;
+        const thematicSimilarity = totalUniqueThemes > 0 ? thematicOverlap / totalUniqueThemes : 0;
+        
+        if (thematicSimilarity > 0) {
+          score += thematicSimilarity * 0.10; // Up to 10% boost for thematic match
+          console.log(`[Matching] Thematic overlap: ${thematicOverlap}/${totalUniqueThemes} (${(thematicSimilarity * 100).toFixed(1)}%)`);
+        }
+        
+        // Check thematic compatibility from compatibility factors
+        if (currentProfile.compatibilityFactors?.thematicCompatibility) {
+          const currentThematicCompat = new Set((currentProfile.compatibilityFactors.thematicCompatibility || []).map(t => t.toLowerCase()));
+          const thematicCompatMatch = [...currentThematicCompat].filter(t => otherThemes.has(t)).length;
+          
+          if (thematicCompatMatch > 0) {
+            score += (thematicCompatMatch / Math.max(currentThematicCompat.size, 1)) * 0.06; // Up to 6% boost
+            console.log(`[Matching] Thematic compatibility match: ${thematicCompatMatch} themes`);
+          }
+        }
+      }
+    }
+
+    // -----------------------------------
+    // REGIONAL MATCHING
+    // -----------------------------------
+    if (currentProfile.regionalProfile && otherProfile.regionalProfile) {
+      const currentRegions = new Set((currentProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
+      const otherRegions = new Set((otherProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
+      
+      if (currentRegions.size > 0 && otherRegions.size > 0) {
+        const regionalOverlap = [...currentRegions].filter(r => otherRegions.has(r)).length;
+        const totalUniqueRegions = new Set([...currentRegions, ...otherRegions]).size;
+        const regionalSimilarity = totalUniqueRegions > 0 ? regionalOverlap / totalUniqueRegions : 0;
+        
+        if (regionalSimilarity > 0) {
+          score += regionalSimilarity * 0.10; // Up to 10% boost for regional match
+          console.log(`[Matching] Regional overlap: ${regionalOverlap}/${totalUniqueRegions} (${(regionalSimilarity * 100).toFixed(1)}%)`);
+        }
+        
+        // Check regional compatibility from compatibility factors
+        if (currentProfile.compatibilityFactors?.regionalCompatibility) {
+          const currentRegionalCompat = new Set((currentProfile.compatibilityFactors.regionalCompatibility || []).map(r => r.toLowerCase()));
+          const regionalCompatMatch = [...currentRegionalCompat].filter(r => otherRegions.has(r)).length;
+          
+          if (regionalCompatMatch > 0) {
+            score += (regionalCompatMatch / Math.max(currentRegionalCompat.size, 1)) * 0.06; // Up to 6% boost
+            console.log(`[Matching] Regional compatibility match: ${regionalCompatMatch} regions`);
+          }
         }
       }
     }
@@ -295,19 +403,55 @@ exports.getMatches = async (userId) => {
   const sorted = results.sort((a, b) => b.score - a.score);
   
   // Remove duplicates by userId (in case same user appears multiple times)
-  const uniqueResults = [];
+  // Use Map to keep the highest scoring version of each user
+  const uniqueMap = new Map();
   const seenUserIds = new Set();
+  
   for (const match of sorted) {
-    if (!seenUserIds.has(match.userId)) {
-      seenUserIds.add(match.userId);
-      uniqueResults.push(match);
+    // Skip if no userId
+    if (!match || !match.userId) {
+      console.log(`[Matching] Skipping match without userId:`, match);
+      continue;
+    }
+    
+    // Normalize userId (trim whitespace, convert to string)
+    const normalizedUserId = String(match.userId).trim();
+    
+    // If we've seen this userId, keep the one with higher score
+    if (seenUserIds.has(normalizedUserId)) {
+      const existing = uniqueMap.get(normalizedUserId);
+      if (existing && match.score > existing.score) {
+        console.log(`[Matching] Replacing duplicate ${normalizedUserId} with higher score: ${match.score.toFixed(4)} > ${existing.score.toFixed(4)}`);
+        uniqueMap.set(normalizedUserId, match);
+      } else {
+        console.log(`[Matching] Skipping duplicate ${normalizedUserId} (${match.name || 'Unknown'}) - lower or equal score`);
+      }
+    } else {
+      seenUserIds.add(normalizedUserId);
+      uniqueMap.set(normalizedUserId, match);
     }
   }
   
-  console.log(`[Matching] Found ${sorted.length} matches, ${uniqueResults.length} unique for user ${userId}`);
-  if (uniqueResults.length > 0) {
-    console.log(`[Matching] Top match: ${uniqueResults[0].name} with score ${uniqueResults[0].score.toFixed(3)}`);
+  const uniqueResults = Array.from(uniqueMap.values());
+  
+  // Final safety check - filter by userId one more time
+  const finalResults = [];
+  const finalSeen = new Set();
+  for (const match of uniqueResults) {
+    const id = String(match.userId).trim();
+    if (!finalSeen.has(id)) {
+      finalSeen.add(id);
+      finalResults.push(match);
+    } else {
+      console.log(`[Matching] Final filter: Removing duplicate ${id} (${match.name || 'Unknown'})`);
+    }
   }
   
-  return uniqueResults;
+  console.log(`[Matching] Found ${sorted.length} matches, ${uniqueResults.length} after Map dedup, ${finalResults.length} final unique for user ${userId}`);
+  if (finalResults.length > 0) {
+    console.log(`[Matching] Top match: ${finalResults[0].name} with score ${finalResults[0].score.toFixed(3)}`);
+    console.log(`[Matching] All match IDs:`, finalResults.map(m => `${m.name} (${m.userId})`));
+  }
+  
+  return finalResults;
 };
