@@ -14,11 +14,18 @@ function MatchList() {
   const [currentUserName, setCurrentUserName] = useState("");
   const [showLikeSentModal, setShowLikeSentModal] = useState(false);
   const [likedUserName, setLikedUserName] = useState("");
+  
+  // Filter states
+  const [showFilters, setShowFilters] = useState(true);
+  const [filterByAge, setFilterByAge] = useState(true);
+  const [filterByLocation, setFilterByLocation] = useState(true);
+  const [filteredMatches, setFilteredMatches] = useState([]);
 
   // Debug: Log when currentIndex changes
   useEffect(() => {
-    console.log(`Current index changed to: ${currentIndex}, match: ${matches[currentIndex]?.name || 'none'}`);
-  }, [currentIndex, matches]);
+    const displayMatches = showFilters ? matches : filteredMatches;
+    console.log(`Current index changed to: ${currentIndex}, match: ${displayMatches[currentIndex]?.name || 'none'}`);
+  }, [currentIndex, matches, filteredMatches, showFilters]);
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -38,28 +45,80 @@ function MatchList() {
         const matchesList = res.data.matches || [];
         console.log(`Found ${matchesList.length} matches`);
         
-        // Remove duplicates based on userId using Map for better performance
-        const uniqueMap = new Map();
-        matchesList.forEach(match => {
-          if (match.userId && !uniqueMap.has(match.userId)) {
-            uniqueMap.set(match.userId, match);
-          }
+        // Filter matches by 60% threshold (score >= 0.6)
+        const filteredMatches = matchesList.filter(match => {
+          const score = match.score || 0;
+          return score >= 0.6;
         });
+        console.log(`Filtered to ${filteredMatches.length} matches with 60%+ compatibility`);
+        
+        // Sort by score (high to low) - backend should already do this, but ensure it
+        const sortedMatches = filteredMatches.sort((a, b) => {
+          const scoreA = a.score || 0;
+          const scoreB = b.score || 0;
+          return scoreB - scoreA; // High to low
+        });
+        
+        // Remove duplicates based on userId using Map for better performance
+        // Also handle cases where userId might be undefined or null
+        const uniqueMap = new Map();
+        const seenUserIds = new Set();
+        
+        sortedMatches.forEach(match => {
+          // Skip if no userId
+          if (!match || !match.userId) {
+            console.warn("Match without userId found:", match);
+            return;
+          }
+          
+          // Skip if we've already seen this userId
+          if (seenUserIds.has(match.userId)) {
+            console.log(`Skipping duplicate match: ${match.userId} (${match.name || 'Unknown'})`);
+            return;
+          }
+          
+          // Add to both Map and Set for tracking
+          uniqueMap.set(match.userId, match);
+          seenUserIds.add(match.userId);
+        });
+        
         const uniqueMatches = Array.from(uniqueMap.values());
-        console.log(`Found ${matchesList.length} matches, ${uniqueMatches.length} unique after deduplication`);
+        console.log(`Found ${sortedMatches.length} matches, ${uniqueMatches.length} unique after deduplication`);
         console.log("Unique match IDs:", uniqueMatches.map(m => m.userId));
-        setMatches(uniqueMatches);
-        if (uniqueMatches.length > 0) {
+        
+        // Additional check: filter out any remaining duplicates by userId
+        const finalMatches = uniqueMatches.filter((match, index, self) => 
+          index === self.findIndex(m => m.userId === match.userId)
+        );
+        
+        if (finalMatches.length !== uniqueMatches.length) {
+          console.warn(`Additional duplicates found! ${uniqueMatches.length} -> ${finalMatches.length}`);
+        }
+        
+        // Ensure final matches are sorted high to low
+        finalMatches.sort((a, b) => {
+          const scoreA = a.score || 0;
+          const scoreB = b.score || 0;
+          return scoreB - scoreA; // High to low
+        });
+        
+        setMatches(finalMatches);
+        setFilteredMatches(finalMatches); // Initially show all matches
+        if (finalMatches.length > 0) {
           // Fetch preferences for all matches
-          uniqueMatches.forEach(match => {
+          finalMatches.forEach(match => {
             fetchMatchDetails(match.userId);
           });
           
-          // Fetch current user name
+          // Fetch current user name and preferences for filtering
           const currentUserId = localStorage.getItem("userId");
           if (currentUserId) {
             axios.get(`http://localhost:5001/api/user/${currentUserId}`)
-              .then(res => setCurrentUserName(res.data.name || "You"))
+              .then(res => {
+                setCurrentUserName(res.data.name || "You");
+                // Apply filters based on user preferences
+                applyFilters(finalMatches, res.data);
+              })
               .catch(err => console.error("Error fetching current user:", err));
           }
         }
@@ -87,6 +146,107 @@ function MatchList() {
     }
   };
 
+  const applyFilters = async (matchesList, currentUser) => {
+    if (!currentUser) {
+      // Fetch current user if not provided
+      const userId = localStorage.getItem("userId");
+      if (userId) {
+        try {
+          const res = await axios.get(`http://localhost:5001/api/user/${userId}`);
+          applyFilters(matchesList, res.data);
+          return;
+        } catch (err) {
+          console.error("Error fetching current user for filters:", err);
+          setFilteredMatches(matchesList);
+          return;
+        }
+      } else {
+        setFilteredMatches(matchesList);
+        return;
+      }
+    }
+
+    let filtered = [...matchesList];
+
+    // Age filter
+    if (filterByAge && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+      // Fetch age for each match
+      const matchesWithAge = await Promise.all(
+        filtered.map(async (match) => {
+          try {
+            const userRes = await axios.get(`http://localhost:5001/api/user/${match.userId}`);
+            return { ...match, matchAge: userRes.data.age };
+          } catch (err) {
+            return { ...match, matchAge: null };
+          }
+        })
+      );
+      filtered = matchesWithAge.filter(match => {
+        if (match.matchAge === null || match.matchAge === undefined) return true; // Allow if age unknown
+        return match.matchAge >= currentUser.ageRangeMin && match.matchAge <= currentUser.ageRangeMax;
+      });
+    }
+
+    // Location filter
+    if (filterByLocation && currentUser.maxDistance !== undefined && currentUser.maxDistance > 0) {
+      const currentCity = (currentUser.city || "").toLowerCase();
+      const currentRegion = (currentUser.location || currentUser.region || "").toLowerCase();
+      
+      const matchesWithLocation = await Promise.all(
+        filtered.map(async (match) => {
+          try {
+            const userRes = await axios.get(`http://localhost:5001/api/user/${match.userId}`);
+            return {
+              ...match,
+              matchCity: (userRes.data.city || "").toLowerCase(),
+              matchRegion: (userRes.data.location || userRes.data.region || "").toLowerCase()
+            };
+          } catch (err) {
+            return { ...match, matchCity: "", matchRegion: "" };
+          }
+        })
+      );
+      
+      filtered = matchesWithLocation.filter(match => {
+        // If location info is missing, allow the match
+        if (!match.matchCity && !match.matchRegion) return true;
+        if (!currentCity && !currentRegion) return true;
+        
+        // Apply distance filter
+        if (currentUser.maxDistance <= 20) {
+          // Require same city
+          return !match.matchCity || !currentCity || match.matchCity === currentCity;
+        } else if (currentUser.maxDistance <= 30) {
+          // Allow same region if cities are different
+          if (match.matchCity && currentCity && match.matchCity !== currentCity) {
+            return match.matchRegion && currentRegion && match.matchRegion === currentRegion;
+          }
+          return true;
+        }
+        // For 50+ miles, allow any location
+        return true;
+      });
+    }
+
+    setFilteredMatches(filtered);
+  };
+
+  const handleFilterToggle = async () => {
+    const userId = localStorage.getItem("userId");
+    if (userId) {
+      try {
+        const res = await axios.get(`http://localhost:5001/api/user/${userId}`);
+        await applyFilters(matches, res.data);
+      } catch (err) {
+        console.error("Error fetching user for filters:", err);
+      }
+    }
+  };
+
+  const handleContinueToMatches = () => {
+    setShowFilters(false);
+  };
+
   const swiped = async (direction, index) => {
     console.log(`Swiped ${direction} on match ${index}, currentIndex: ${currentIndex}`);
     
@@ -99,7 +259,8 @@ function MatchList() {
     if (direction === 'right') {
       // Like - send like to backend
       const userId = localStorage.getItem("userId");
-      const matchUserId = matches[index].userId;
+      const displayMatches = showFilters ? matches : filteredMatches;
+      const matchUserId = displayMatches[index].userId;
       
       console.log(`Sending like from ${userId} to ${matchUserId}`);
       
@@ -118,13 +279,14 @@ function MatchList() {
         console.log("Is match?", isMatch);
         console.log("Match status:", response.data.match);
         
+        const displayMatches = showFilters ? matches : filteredMatches;
         if (isMatch) {
           // It's a confirmed match! Both users liked each other
-          console.log("🎉 It's a match!", matches[index].name);
-          console.log("Setting matched user:", matches[index]);
+          console.log("🎉 It's a match!", displayMatches[index].name);
+          console.log("Setting matched user:", displayMatches[index]);
           
           // Set both states together
-          const matchedUserData = { ...matches[index] };
+          const matchedUserData = { ...displayMatches[index] };
           setMatchedUser(matchedUserData);
           setShowMatchModal(true);
           
@@ -134,11 +296,15 @@ function MatchList() {
           return;
         } else {
           // Not a match yet - just a like (pending)
-          console.log("You liked", matches[index].name, "- waiting for them to like you back");
+          const likedName = displayMatches[index]?.name || "them";
+          console.log("You liked", likedName, "- waiting for them to like you back");
           
-          // Show "like sent" modal
-          setLikedUserName(matches[index].name);
-          setShowLikeSentModal(true);
+          // Show "like sent" modal - ensure name is set before showing modal
+          setLikedUserName(likedName);
+          // Use setTimeout to ensure state is updated before showing modal
+          setTimeout(() => {
+            setShowLikeSentModal(true);
+          }, 0);
           
           // Don't advance yet - wait for user to close modal
           return;
@@ -154,8 +320,9 @@ function MatchList() {
     setTimeout(() => {
       setCurrentIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
+        const displayMatches = showFilters ? matches : filteredMatches;
         console.log(`Moving from index ${prevIndex} to ${nextIndex}`);
-        if (nextIndex < matches.length) {
+        if (nextIndex < displayMatches.length) {
           return nextIndex;
         } else {
           console.log("No more matches");
@@ -170,15 +337,17 @@ function MatchList() {
   };
 
   const handleLike = async () => {
-    if (currentIndex < matches.length) {
-      console.log(`HandleLike: currentIndex=${currentIndex}, match=${matches[currentIndex]?.name}`);
+    const displayMatches = showFilters ? matches : filteredMatches;
+    if (currentIndex < displayMatches.length) {
+      console.log(`HandleLike: currentIndex=${currentIndex}, match=${displayMatches[currentIndex]?.name}`);
       await swiped('right', currentIndex);
     }
   };
 
   const handlePass = () => {
-    if (currentIndex < matches.length) {
-      console.log(`HandlePass: currentIndex=${currentIndex}, match=${matches[currentIndex]?.name}`);
+    const displayMatches = showFilters ? matches : filteredMatches;
+    if (currentIndex < displayMatches.length) {
+      console.log(`HandlePass: currentIndex=${currentIndex}, match=${displayMatches[currentIndex]?.name}`);
       swiped('left', currentIndex);
     }
   };
@@ -188,7 +357,8 @@ function MatchList() {
     setMatchedUser(null);
     // Move to next match after closing modal
     setCurrentIndex(prevIndex => {
-      if (prevIndex < matches.length - 1) {
+      const displayMatches = showFilters ? matches : filteredMatches;
+      if (prevIndex < displayMatches.length - 1) {
         return prevIndex + 1;
       }
       return prevIndex;
@@ -200,7 +370,8 @@ function MatchList() {
     setLikedUserName("");
     // Move to next match after closing modal
     setCurrentIndex(prevIndex => {
-      if (prevIndex < matches.length - 1) {
+      const displayMatches = showFilters ? matches : filteredMatches;
+      if (prevIndex < displayMatches.length - 1) {
         return prevIndex + 1;
       }
       return prevIndex;
@@ -225,7 +396,83 @@ function MatchList() {
     );
   }
 
-  if (currentIndex >= matches.length) {
+  // Show filter UI first
+  if (showFilters && matches.length > 0) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6">
+        <div className="bg-gray-800 rounded-lg p-8 w-full max-w-md shadow-xl">
+          <h1 className="text-3xl font-bold mb-6 text-center">Filter Your Matches</h1>
+          
+          <div className="space-y-6">
+            {/* Age Filter Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+              <div>
+                <label className="text-lg font-semibold">Filter by Age Range</label>
+                <p className="text-sm text-gray-400">Show only matches within your preferred age range</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterByAge}
+                  onChange={(e) => {
+                    setFilterByAge(e.target.checked);
+                    setTimeout(handleFilterToggle, 100);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            {/* Location Filter Toggle */}
+            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+              <div>
+                <label className="text-lg font-semibold">Filter by Location</label>
+                <p className="text-sm text-gray-400">Show only matches within your preferred distance</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filterByLocation}
+                  onChange={(e) => {
+                    setFilterByLocation(e.target.checked);
+                    setTimeout(handleFilterToggle, 100);
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-8 flex gap-4">
+            <button
+              onClick={handleContinueToMatches}
+              className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+            >
+              View {filteredMatches.length || matches.length} Matches →
+            </button>
+            <button
+              onClick={() => {
+                setFilterByAge(false);
+                setFilterByLocation(false);
+                setFilteredMatches(matches);
+                handleContinueToMatches();
+              }}
+              className="px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm transition"
+            >
+              Show All
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Use filteredMatches instead of matches for display
+  const displayMatches = showFilters ? matches : filteredMatches;
+  
+  if (currentIndex >= displayMatches.length) {
     return (
       <div className="flex flex-col justify-center items-center h-screen text-white bg-[#0f172a]">
         <div className="text-4xl mb-4">🎉</div>
@@ -290,7 +537,7 @@ function MatchList() {
 
             {/* Message */}
             <p className="text-xl text-white/90 mb-8 font-medium leading-relaxed">
-              We've let <span className="font-bold">{likedUserName}</span> know that you would like to connect!
+              We've let <span className="font-bold">{likedUserName || "them"}</span> know that you would like to connect!
             </p>
 
             {/* Subtitle */}
@@ -565,9 +812,20 @@ function MatchList() {
               preventSwipe={['up', 'down']}
             >
               <div className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col">
-                {/* Profile Picture - Big */}
+                {/* Profile Pictures - Big */}
                 <div className="relative h-2/5 bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  {match.imageUrl ? (
+                  {match.profileImages && Array.isArray(match.profileImages) && match.profileImages.length > 0 ? (
+                    <div className="w-full h-full flex gap-1">
+                      {match.profileImages.slice(0, 2).map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`${match.name} - Image ${idx + 1}`}
+                          className={`h-full object-cover ${match.profileImages.length === 1 ? 'w-full' : 'w-1/2'}`}
+                        />
+                      ))}
+                    </div>
+                  ) : match.imageUrl ? (
                     <img
                       src={match.imageUrl}
                       alt={match.name}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { isProfileComplete } from "../utils/profileCheck";
 
 function Profile() {
   const navigate = useNavigate();
@@ -9,6 +10,8 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [profileImages, setProfileImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -27,11 +30,22 @@ function Profile() {
           age: userRes.data.age || "",
           gender: userRes.data.gender || "",
           birthday: userRes.data.birthday || "",
+          location: userRes.data.location || "",
+          city: userRes.data.city || "",
           occupationType: userRes.data.occupationType || "",
           university: userRes.data.university || "",
           jobRole: userRes.data.jobRole || "",
           company: userRes.data.company || "",
         });
+        
+        // Set profile images
+        if (userRes.data.profileImages && Array.isArray(userRes.data.profileImages)) {
+          setProfileImages(userRes.data.profileImages);
+          setImagePreviews(userRes.data.profileImages);
+        } else {
+          setProfileImages([]);
+          setImagePreviews([]);
+        }
 
         // Get taste preferences
         const tasteRes = await axios.get(`http://localhost:5001/api/taste/${userId}`);
@@ -45,6 +59,52 @@ function Profile() {
 
     fetchProfile();
   }, [navigate]);
+
+  const handleImageUpload = (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const newImages = [...profileImages];
+      const newPreviews = [...imagePreviews];
+      
+      if (index < 2) {
+        newImages[index] = base64String;
+        newPreviews[index] = base64String;
+      } else {
+        // If trying to add more than 2, replace the last one
+        newImages[1] = base64String;
+        newPreviews[1] = base64String;
+      }
+      
+      setProfileImages(newImages);
+      setImagePreviews(newPreviews);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (index) => {
+    const newImages = [...profileImages];
+    const newPreviews = [...imagePreviews];
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setProfileImages(newImages);
+    setImagePreviews(newPreviews);
+  };
 
   const handleUpdate = async () => {
     // Validate required fields - check if they're set (either in form or already in user)
@@ -63,19 +123,53 @@ function Profile() {
 
     try {
       const userId = localStorage.getItem("userId");
-      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, formData);
+      
+      // Prepare update data - include all form fields
+      const updateData = {
+        name: formData.name,
+        age: formData.age,
+        gender: formData.gender,
+        birthday: formData.birthday,
+        location: formData.location,
+        city: formData.city,
+        occupationType: formData.occupationType,
+        university: formData.university,
+        jobRole: formData.jobRole,
+        company: formData.company,
+      };
+      
+      // Only include profileImages if they exist
+      if (profileImages.length > 0) {
+        updateData.profileImages = profileImages;
+      }
+      
+      // Update profile
+      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, updateData);
+      
+      // If images were uploaded, also send them via the images endpoint
+      if (profileImages.length > 0) {
+        try {
+          await axios.post(`http://localhost:5001/api/user/${userId}/images`, {
+            images: profileImages
+          });
+        } catch (imgErr) {
+          console.error("Error uploading images:", imgErr);
+          // Don't fail the whole update if image upload fails
+        }
+      }
+      
       setUser(res.data.user);
       setEditing(false);
       
-      // Check if profile is now complete
-      const isProfileComplete = res.data.user.birthday && res.data.user.gender && res.data.user.occupationType;
+      // Check if profile is now complete using the utility function
+      const profileComplete = isProfileComplete(res.data.user);
       const hasPreferences = taste && (
         (taste.movies && taste.movies.length > 0) ||
         (taste.music && taste.music.length > 0) ||
         (taste.shows && taste.shows.length > 0)
       );
       
-      if (isProfileComplete && !hasPreferences) {
+      if (profileComplete && !hasPreferences) {
         // Profile is complete but preferences are not set
         const goToPreferences = window.confirm(
           "Profile updated successfully! 🎉\n\n" +
@@ -83,10 +177,19 @@ function Profile() {
           "This will help us find better matches for you."
         );
         if (goToPreferences) {
-          navigate("/preferences");
+          navigate("/age-preference");
+        }
+      } else if (profileComplete && hasPreferences) {
+        // Profile and preferences are complete - offer to go to matches
+        const goToMatches = window.confirm(
+          "Profile updated successfully! 🎉\n\n" +
+          "Your profile is complete. Would you like to view your matches?"
+        );
+        if (goToMatches) {
+          navigate("/match-list");
         }
       } else {
-        alert("Profile updated successfully!");
+        alert("Profile updated successfully! Please complete all required fields (name, age, gender, location).");
       }
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -123,7 +226,7 @@ function Profile() {
                   Edit Profile
                 </button>
                 <button
-                  onClick={() => navigate("/preferences")}
+                  onClick={() => navigate("/age-preference")}
                   className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
                 >
                   Go to Preference Browsing
@@ -151,11 +254,21 @@ function Profile() {
                       age: user?.age || "",
                       gender: user?.gender || "",
                       birthday: user?.birthday || "",
+                      location: user?.location || "",
+                      city: user?.city || "",
                       occupationType: user?.occupationType || "",
                       university: user?.university || "",
                       jobRole: user?.jobRole || "",
                       company: user?.company || "",
                     });
+                    // Reset images to original
+                    if (user?.profileImages && Array.isArray(user.profileImages)) {
+                      setProfileImages(user.profileImages);
+                      setImagePreviews(user.profileImages);
+                    } else {
+                      setProfileImages([]);
+                      setImagePreviews([]);
+                    }
                   }}
                   className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
                 >
@@ -170,9 +283,79 @@ function Profile() {
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">Account Information</h2>
-              {(!user.birthday || !user.gender || !user.occupationType) && !editing && (
+              {!isProfileComplete(user) && !editing && (
                 <div className="bg-yellow-600 text-white px-3 py-1 rounded text-sm">
                   ⚠️ Complete your profile
+                </div>
+              )}
+            </div>
+
+            {/* Profile Images Display/Upload */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Profile Images (Optional - Max 2)</h3>
+              {!editing ? (
+                <div className="flex gap-4">
+                  {user.profileImages && Array.isArray(user.profileImages) && user.profileImages.length > 0 ? (
+                    user.profileImages.map((img, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={img}
+                          alt={`Profile ${idx + 1}`}
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-600"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">No images uploaded. Images will be auto-generated based on your gender when you save your profile.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[0, 1].map((index) => (
+                      <div key={index} className="relative">
+                        <label className="block text-sm font-semibold mb-2">
+                          Image {index + 1} {index === 0 ? "(Optional)" : "(Optional)"}
+                        </label>
+                        {imagePreviews[index] ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreviews[index]}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-lg border-2 border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload(e, index)}
+                              className="hidden"
+                              id={`image-upload-${index}`}
+                            />
+                            <label
+                              htmlFor={`image-upload-${index}`}
+                              className="cursor-pointer text-blue-400 hover:text-blue-300"
+                            >
+                              Click to upload image
+                            </label>
+                            <p className="text-xs text-gray-500 mt-2">Max 5MB</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    💡 If you don't upload images, we'll generate profile pictures based on your gender using AI.
+                  </p>
                 </div>
               )}
             </div>
@@ -195,6 +378,11 @@ function Profile() {
                   <p className="text-gray-300"><span className="font-semibold">Birthday:</span> {new Date(user.birthday).toLocaleDateString()}</p>
                 ) : (
                   <p className="text-gray-500 italic">Birthday: Not set</p>
+                )}
+                {user.location || user.city ? (
+                  <p className="text-gray-300"><span className="font-semibold">Location:</span> {user.city ? `${user.city}, ${user.location || ''}`.trim() : user.location}</p>
+                ) : (
+                  <p className="text-gray-500 italic">Location: Not set</p>
                 )}
                 {user.occupationType ? (
                   <div>
@@ -224,9 +412,9 @@ function Profile() {
                 ) : (
                   <p className="text-gray-500 italic">Occupation: Not set</p>
                 )}
-                {(!user.birthday || !user.gender || !user.occupationType) && (
+                {!isProfileComplete(user) && (
                   <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded text-sm text-blue-300">
-                    💡 Click "Edit Profile" to complete your profile information. Date of birth and gender are required.
+                    💡 Click "Edit Profile" to complete your profile information. Name, age, gender, and location are required.
                   </div>
                 )}
               </div>
@@ -279,6 +467,28 @@ function Profile() {
                     className="w-full p-3 rounded bg-gray-700 text-white"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">City</label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      placeholder="e.g., New York"
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">State/Region</label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      placeholder="e.g., NY, California"
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2">Occupation Type</label>
                   <select
@@ -324,6 +534,44 @@ function Profile() {
                     </div>
                   </>
                 )}
+                
+                {/* Save and Cancel buttons at bottom of form */}
+                <div className="flex gap-4 mt-6 pt-6 border-t border-gray-700">
+                  <button
+                    onClick={handleUpdate}
+                    className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+                  >
+                    💾 Save Changes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditing(false);
+                      setFormData({
+                        name: user?.name || "",
+                        age: user?.age || "",
+                        gender: user?.gender || "",
+                        birthday: user?.birthday || "",
+                        location: user?.location || "",
+                        city: user?.city || "",
+                        occupationType: user?.occupationType || "",
+                        university: user?.university || "",
+                        jobRole: user?.jobRole || "",
+                        company: user?.company || "",
+                      });
+                      // Reset images to original
+                      if (user?.profileImages && Array.isArray(user.profileImages)) {
+                        setProfileImages(user.profileImages);
+                        setImagePreviews(user.profileImages);
+                      } else {
+                        setProfileImages([]);
+                        setImagePreviews([]);
+                      }
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -384,14 +632,14 @@ function Profile() {
             {(!taste.movies || taste.movies.length === 0) &&
              (!taste.music || taste.music.length === 0) &&
              (!taste.shows || taste.shows.length === 0) && (
-              <p className="text-gray-400">No preferences set yet. <button onClick={() => navigate("/preferences")} className="text-blue-400 hover:underline">Add preferences</button></p>
+              <p className="text-gray-400">No preferences set yet. <button onClick={() => navigate("/age-preference")} className="text-blue-400 hover:underline">Add preferences</button></p>
             )}
           </div>
         )}
 
         <div className="flex gap-4">
           <button
-            onClick={() => navigate("/preferences")}
+            onClick={() => navigate("/age-preference")}
             className="bg-green-600 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition flex-1"
           >
             Go to Preference Browsing
