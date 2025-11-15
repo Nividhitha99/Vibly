@@ -79,6 +79,7 @@
       "id": "18ec8fd8-1953-4f63-981a-34f9621b5391",
       "name": "Alex",
       "email": "alex@example.com",
+<<<<<<< Updated upstream
       "password": "$2b$10$0CFnRDCaoKSkseY70uOT2.ladeJykvCifzo3CAkzo8jrJaM4Vd37e",
       "ageRangeMin": 18,
       "ageRangeMax": 45,
@@ -90,6 +91,9 @@
       "city": "Bilbao",
       "gender": "female",
       "lookingFor": "male"
+=======
+      "password": "$2b$10$./y3Aw/CVd07i.sawImti.IaAuD6sJrpIVefDx7R6zJZgucvmK8Rq"
+>>>>>>> Stashed changes
     },
     {
       "id": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
@@ -197,6 +201,7 @@
       "id": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
       "name": "Taylor (Mock)",
       "email": "taylor.mock@example.com",
+<<<<<<< Updated upstream
       "password": "$2b$10$dummy.hash.for.mock.user.password123",
       "ageRangeMin": 18,
       "ageRangeMax": 45,
@@ -208,6 +213,15 @@
       "city": "Frankfurt",
       "gender": "female",
       "lookingFor": "male"
+=======
+      "password": "$2b$10$DFw0nKec9N7pm75/8c.K7e1hwclWpAkxlmQaiiVMqJW0xqgobS8iK"
+    },
+    {
+      "id": "7cfc2bc4-2213-4a9f-8c29-5499f26803da",
+      "name": "subi",
+      "email": "subi@gmail.com",
+      "password": "$2b$10$fLHCLe1VRMzbcyJmwHHJf.pVtYhnmhuDWVMQElcxMKewiqY1q9lee"
+>>>>>>> Stashed changes
     }
   ],
   "tastes": [
