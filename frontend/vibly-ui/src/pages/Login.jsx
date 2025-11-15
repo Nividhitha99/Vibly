@@ -19,7 +19,7 @@ export default function Login() {
     );
 
     localStorage.setItem("userId", res.data.userId);
-      navigate("/preferences");
+      navigate("/profile");
   } catch (err) {
       setError(err.response?.data?.error || "Invalid credentials");
   }
