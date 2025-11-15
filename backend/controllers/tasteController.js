@@ -38,6 +38,7 @@ exports.savePreferences = async (req, res) => {
     // Only generate if at least one preference is provided
     const hasPreferences = moviesArray.length > 0 || musicArray.length > 0 || showsArray.length > 0;
     if (hasPreferences) {
+      console.log(`[TasteController] Generating embedding for user ${userId} with ${moviesArray.length} movies, ${musicArray.length} music, ${showsArray.length} shows`);
       // Run embedding generation asynchronously without blocking the response
       // This prevents the server from crashing if embedding generation fails
       embeddingService.generateEmbedding(userId, moviesArray, musicArray, showsArray)
@@ -46,6 +47,7 @@ exports.savePreferences = async (req, res) => {
         })
         .catch((embeddingError) => {
           console.error("✗ Failed to generate embedding (non-fatal):", embeddingError.message);
+          console.error("✗ Embedding error stack:", embeddingError.stack);
           // Don't fail the request if embedding generation fails
         });
     } else {

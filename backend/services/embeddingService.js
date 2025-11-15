@@ -1,14 +1,13 @@
-// OpenAI API Configuration
-// Get your API key from https://platform.openai.com/api-keys
-const OPENAI_KEY = process.env.OPENAI_KEY || "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";
+// Google Gemini API Configuration
+const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
 
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const axios = require("axios");
 const getDb = require("../utils/db");
+const psychologicalProfileService = require("./psychologicalProfileService");
 
-// Initialize OpenAI Client
-const client = new OpenAI({
-  apiKey: OPENAI_KEY
-});
+// Initialize Gemini Client
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
 // Combine taste into meaningful string (handles both string and object formats)
 function combineTaste(movies, music, shows) {
@@ -56,7 +55,15 @@ function combineTaste(movies, music, shows) {
 
 exports.generateEmbedding = async (userId, movies, music, shows) => {
   try {
-    const text = combineTaste(movies, music, shows);
+    // Use psychological profiling to generate richer embedding text
+    // This includes both content (titles, genres) and psychological meaning
+    console.log(`[Embedding] 🧠 Generating psychological profile for user ${userId}...`);
+    console.log(`[Embedding] Calling Gemini API for psychological analysis...`);
+    const psychologicalText = await psychologicalProfileService.generatePsychologicalEmbeddingText(movies, music, shows);
+    console.log(`[Embedding] ✅ Psychological analysis complete, text length: ${psychologicalText?.length || 0}`);
+    
+    // Fallback to basic text if psychological analysis fails
+    const text = psychologicalText || combineTaste(movies, music, shows);
 
     // Skip if text is empty or too short
     if (!text || text.trim().length < 3) {
@@ -64,35 +71,57 @@ exports.generateEmbedding = async (userId, movies, music, shows) => {
       return null;
     }
 
-    console.log("Generating embedding for:", text);
+    console.log("[Embedding] 📊 Generating embedding with psychological insights...");
+    console.log("[Embedding] Text preview:", text.substring(0, 200) + "...");
 
-    const response = await client.embeddings.create({
-      model: "text-embedding-3-small",
-      input: text
-    });
+    // Use Gemini Embedding API via REST
+    console.log(`[Gemini API] 🔗 Calling Gemini Embedding API (text-embedding-004)...`);
+    const embeddingResponse = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_KEY}`,
+      {
+        model: "models/text-embedding-004",
+        content: {
+          parts: [{ text: text }]
+        }
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    if (!response || !response.data || !response.data[0] || !response.data[0].embedding) {
-      throw new Error("Invalid response from OpenAI API");
+    if (!embeddingResponse || !embeddingResponse.data || !embeddingResponse.data.embedding || !embeddingResponse.data.embedding.values) {
+      throw new Error("Invalid response from Gemini API");
     }
 
-    const vector = response.data[0].embedding;
+    console.log(`[Gemini API] ✅ Embedding API call successful! Vector dimension: ${embeddingResponse.data.embedding.values.length}`);
+    const vector = embeddingResponse.data.embedding.values;
 
     // Save embedding in LowDB
     const db = await getDb();
     const existing = db.data.embeddings.find(e => e.userId === userId);
 
+    // Also save the psychological profile for reference
+    const psychologicalProfile = await psychologicalProfileService.analyzePsychologicalProfile(movies, music, shows);
+    
+    // Update or create embedding entry with psychological profile
     if (existing) {
       existing.vector = vector;
+      existing.psychologicalProfile = psychologicalProfile;
+      existing.lastUpdated = new Date().toISOString();
     } else {
       db.data.embeddings.push({
         userId,
-        vector
+        vector,
+        psychologicalProfile: psychologicalProfile,
+        lastUpdated: new Date().toISOString()
       });
     }
 
     await db.write();
 
-    console.log(`Embedding saved successfully for user ${userId}`);
+    console.log(`[Embedding] Saved successfully for user ${userId} with ${psychologicalProfile.traits?.length || 0} psychological traits`);
     return vector;
 
   } catch (error) {
@@ -100,7 +129,7 @@ exports.generateEmbedding = async (userId, movies, music, shows) => {
     console.error("Error name:", error.name);
     console.error("Error message:", error.message);
     if (error.response) {
-      console.error("OpenAI API response:", error.response.status, error.response.data);
+      console.error("Gemini API response:", error.response.status, error.response.data);
     }
     // Don't throw - let the caller handle it
     throw error;

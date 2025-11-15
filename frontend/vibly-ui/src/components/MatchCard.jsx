@@ -9,9 +9,11 @@ function MatchCard({ match }) {
       
       <h2 className="text-xl font-semibold">{match.name}</h2>
       
-      <p className="text-blue-400">Compatibility Score: {((match.score || 0) * 100).toFixed(1)}%</p>
+      <p className="text-blue-400">
+        Compatibility Score: {((match.score || 0) * 100).toFixed(1)}%
+      </p>
 
-      {match.commonTastes && (
+      {match.commonTastes && match.commonTastes.length > 0 && (
         <div className="text-sm text-gray-300">
           <p className="font-semibold mb-1">Common Tastes:</p>
           <ul className="list-disc ml-5">

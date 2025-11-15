@@ -1,11 +1,10 @@
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Get OpenAI API key (from env or hardcoded)
-const OPENAI_KEY = process.env.OPENAI_KEY || "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";
+// Get Gemini API key (from env or hardcoded)
+const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
 
-const client = new OpenAI({
-  apiKey: OPENAI_KEY
-});
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 exports.enhanceChat = async (req, res) => {
   try {
@@ -30,15 +29,15 @@ Message:
 Return only the rewritten message string, no JSON formatting.
     `;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7
+    const result = await model.generateContent(prompt, {
+      generationConfig: {
+        temperature: 0.7
+      }
     });
 
     res.json({
       success: true,
-      output: response.choices[0].message.content.trim()
+      output: result.response.text().trim()
     });
 
   } catch (error) {
@@ -51,17 +50,22 @@ exports.moderateMessage = async (req, res) => {
     try {
       const { text } = req.body;
   
-      const response = await client.moderations.create({
-        model: "omni-moderation-latest",
-        input: text
+      // Use Gemini for moderation
+      const moderationPrompt = `Analyze this message for inappropriate content, hate speech, harassment, or explicit material. Return JSON: {"flagged": true/false, "reason": "reason if flagged"}\n\nMessage: "${text}"`;
+      
+      const result = await model.generateContent(moderationPrompt, {
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: "application/json"
+        }
       });
   
-      const result = response.results[0];
+      const moderationResult = JSON.parse(result.response.text());
   
-      if (result.flagged) {
+      if (moderationResult.flagged) {
         return res.status(400).json({
           allowed: false,
-          reason: result.categories
+          reason: moderationResult.reason || "Inappropriate content detected"
         });
       }
   
