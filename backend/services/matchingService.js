@@ -61,28 +61,102 @@ exports.getMatches = async (userId) => {
     }
 
     // -----------------------------------
-    // OVERLAP BOOSTS
+    // OVERLAP BOOSTS (using API data)
     // -----------------------------------
     const currentMovies = Array.isArray(currentTaste.movies) ? currentTaste.movies : [];
     const otherMovies = Array.isArray(otherTaste.movies) ? otherTaste.movies : [];
-    const sharedMovies = currentMovies.filter(m => otherMovies.includes(m)).length;
+    
+    // Count exact matches (by ID)
+    const sharedMovies = currentMovies.filter(m => {
+      const movieId = typeof m === 'object' ? m.id : m;
+      return otherMovies.some(om => {
+        const otherId = typeof om === 'object' ? om.id : om;
+        return movieId === otherId;
+      });
+    }).length;
+
+    // Genre overlap for movies (if API data available)
+    let movieGenreOverlap = 0;
+    if (currentMovies.length > 0 && otherMovies.length > 0) {
+      const currentGenres = new Set();
+      const otherGenres = new Set();
+      
+      currentMovies.forEach(m => {
+        if (typeof m === 'object' && m.genres && Array.isArray(m.genres)) {
+          m.genres.forEach(g => currentGenres.add(g));
+        }
+      });
+      
+      otherMovies.forEach(m => {
+        if (typeof m === 'object' && m.genres && Array.isArray(m.genres)) {
+          m.genres.forEach(g => otherGenres.add(g));
+        }
+      });
+      
+      movieGenreOverlap = [...currentGenres].filter(g => otherGenres.has(g)).length;
+    }
 
     const currentMusic = Array.isArray(currentTaste.music) ? currentTaste.music : [];
     const otherMusic = Array.isArray(otherTaste.music) ? otherTaste.music : [];
-    const sharedMusic = currentMusic.filter(m => otherMusic.includes(m)).length;
+    
+    // Count exact matches (by ID)
+    const sharedMusic = currentMusic.filter(m => {
+      const musicId = typeof m === 'object' ? m.id : m;
+      return otherMusic.some(om => {
+        const otherId = typeof om === 'object' ? om.id : om;
+        return musicId === otherId;
+      });
+    }).length;
+
+    // Genre overlap for music (artists)
+    let musicGenreOverlap = 0;
+    if (currentMusic.length > 0 && otherMusic.length > 0) {
+      const currentGenres = new Set();
+      const otherGenres = new Set();
+      
+      currentMusic.forEach(m => {
+        if (typeof m === 'object' && m.genres && Array.isArray(m.genres)) {
+          m.genres.forEach(g => currentGenres.add(g.toLowerCase()));
+        }
+      });
+      
+      otherMusic.forEach(m => {
+        if (typeof m === 'object' && m.genres && Array.isArray(m.genres)) {
+          m.genres.forEach(g => otherGenres.add(g.toLowerCase()));
+        }
+      });
+      
+      musicGenreOverlap = [...currentGenres].filter(g => otherGenres.has(g)).length;
+    }
 
     const currentShows = Array.isArray(currentTaste.shows) ? currentTaste.shows : [];
     const otherShows = Array.isArray(otherTaste.shows) ? otherTaste.shows : [];
-    const sharedShows = currentShows.filter(s => otherShows.includes(s)).length;
+    
+    // Count exact matches (by ID)
+    const sharedShows = currentShows.filter(s => {
+      const showId = typeof s === 'object' ? s.id : s;
+      return otherShows.some(os => {
+        const otherId = typeof os === 'object' ? os.id : os;
+        return showId === otherId;
+      });
+    }).length;
 
     // Movie overlap boost
     if (sharedMovies >= 2) {
       score += 0.05;
     }
+    // Movie genre overlap boost
+    if (movieGenreOverlap >= 2) {
+      score += 0.03;
+    }
 
     // Music overlap boost
     if (sharedMusic >= 2) {
       score += 0.07;
+    }
+    // Music genre overlap boost
+    if (musicGenreOverlap >= 2) {
+      score += 0.04;
     }
 
     // Show overlap boost

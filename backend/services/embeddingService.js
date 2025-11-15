@@ -1,5 +1,6 @@
-// HARD-CODE YOUR OPENAI KEY HERE (locally only)
-const OPENAI_KEY = "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";  
+// OpenAI API Configuration
+// Get your API key from https://platform.openai.com/api-keys
+const OPENAI_KEY = process.env.OPENAI_KEY || "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";
 
 const { OpenAI } = require("openai");
 const getDb = require("../utils/db");
@@ -9,13 +10,48 @@ const client = new OpenAI({
   apiKey: OPENAI_KEY
 });
 
-// Combine taste into meaningful string
+// Combine taste into meaningful string (handles both string and object formats)
 function combineTaste(movies, music, shows) {
-  const m = movies?.join(", ") || "";
-  const mu = music?.join(", ") || "";
-  const s = shows?.join(", ") || "";
+  // Handle movies - extract titles from objects or use strings
+  const movieTitles = (movies || []).map(m => {
+    if (typeof m === 'object' && m.title) return m.title;
+    if (typeof m === 'object' && m.name) return m.name;
+    return String(m);
+  });
+  const m = movieTitles.join(", ") || "";
 
-  return `Movies: ${m}. Music: ${mu}. TV Shows: ${s}.`;
+  // Handle music - extract names from objects or use strings
+  const musicNames = (music || []).map(mu => {
+    if (typeof mu === 'object' && mu.name) return mu.name;
+    if (typeof mu === 'object' && mu.title) return mu.title;
+    return String(mu);
+  });
+  const mu = musicNames.join(", ") || "";
+
+  // Handle shows - extract titles from objects or use strings
+  const showTitles = (shows || []).map(s => {
+    if (typeof s === 'object' && s.title) return s.title;
+    if (typeof s === 'object' && s.name) return s.name;
+    return String(s);
+  });
+  const s = showTitles.join(", ") || "";
+
+  // Also include genres if available for better embedding
+  const movieGenres = (movies || [])
+    .filter(m => typeof m === 'object' && m.genres)
+    .flatMap(m => m.genres || [])
+    .filter((v, i, a) => a.indexOf(v) === i); // unique
+
+  const musicGenres = (music || [])
+    .filter(m => typeof m === 'object' && m.genres)
+    .flatMap(m => m.genres || [])
+    .filter((v, i, a) => a.indexOf(v) === i); // unique
+
+  const genreText = movieGenres.length > 0 || musicGenres.length > 0
+    ? ` Genres: ${[...movieGenres, ...musicGenres].join(", ")}.`
+    : "";
+
+  return `Movies: ${m}. Music: ${mu}. TV Shows: ${s}.${genreText}`;
 }
 
 exports.generateEmbedding = async (userId, movies, music, shows) => {
