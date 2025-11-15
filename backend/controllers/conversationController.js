@@ -1,12 +1,11 @@
 const getDb = require("../utils/db");
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Get OpenAI API key (from env or hardcoded)
-const OPENAI_KEY = process.env.OPENAI_KEY || "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";
+// Get Gemini API key (from env or hardcoded)
+const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
 
-const client = new OpenAI({
-  apiKey: OPENAI_KEY
-});
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 exports.getConversationStarters = async (req, res) => {
   try {
@@ -60,13 +59,14 @@ Return only a JSON list of messages:
 ["msg1", "msg2", ...]
     `;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.8
+    const result = await model.generateContent(prompt, {
+      generationConfig: {
+        temperature: 0.8,
+        responseMimeType: "application/json"
+      }
     });
 
-    const output = JSON.parse(response.choices[0].message.content);
+    const output = JSON.parse(result.response.text());
 
     res.json({
       success: true,

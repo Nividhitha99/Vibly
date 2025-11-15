@@ -1,11 +1,10 @@
-const { OpenAI } = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Get OpenAI API key (from env or hardcoded)
-const OPENAI_KEY = process.env.OPENAI_KEY || "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";
+// Get Gemini API key (from env or hardcoded)
+const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
 
-const client = new OpenAI({
-  apiKey: OPENAI_KEY
-});
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 exports.autoTagItem = async (title) => {
   try {
@@ -21,13 +20,14 @@ Return JSON in this EXACT format:
 }
 `;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.4
+    const result = await model.generateContent(prompt, {
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: "application/json"
+      }
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return JSON.parse(result.response.text());
 
   } catch (err) {
     console.log("Auto-tagging error:", err);
