@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { isProfileComplete } from "../utils/profileCheck";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,24 @@ export default function Login() {
     );
 
     localStorage.setItem("userId", res.data.userId);
+    
+    // Check if profile is complete
+    try {
+      const userRes = await axios.get(`http://localhost:5001/api/user/${res.data.userId}`);
+      const user = userRes.data;
+      
+      if (isProfileComplete(user)) {
+        // Profile is complete - go directly to matches
+        navigate("/match-list");
+      } else {
+        // Profile incomplete - go to profile to fill mandatory fields
+        navigate("/profile");
+      }
+    } catch (userErr) {
+      // If we can't fetch user, go to profile as fallback
+      console.error("Error fetching user after login:", userErr);
       navigate("/profile");
+    }
   } catch (err) {
       setError(err.response?.data?.error || "Invalid credentials");
   }

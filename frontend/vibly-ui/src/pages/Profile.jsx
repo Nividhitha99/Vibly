@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { isProfileComplete } from "../utils/profileCheck";
 
 function Profile() {
   const navigate = useNavigate();
@@ -160,15 +161,15 @@ function Profile() {
       setUser(res.data.user);
       setEditing(false);
       
-      // Check if profile is now complete
-      const isProfileComplete = res.data.user.birthday && res.data.user.gender && res.data.user.occupationType;
+      // Check if profile is now complete using the utility function
+      const profileComplete = isProfileComplete(res.data.user);
       const hasPreferences = taste && (
         (taste.movies && taste.movies.length > 0) ||
         (taste.music && taste.music.length > 0) ||
         (taste.shows && taste.shows.length > 0)
       );
       
-      if (isProfileComplete && !hasPreferences) {
+      if (profileComplete && !hasPreferences) {
         // Profile is complete but preferences are not set
         const goToPreferences = window.confirm(
           "Profile updated successfully! 🎉\n\n" +
@@ -178,8 +179,17 @@ function Profile() {
         if (goToPreferences) {
           navigate("/age-preference");
         }
+      } else if (profileComplete && hasPreferences) {
+        // Profile and preferences are complete - offer to go to matches
+        const goToMatches = window.confirm(
+          "Profile updated successfully! 🎉\n\n" +
+          "Your profile is complete. Would you like to view your matches?"
+        );
+        if (goToMatches) {
+          navigate("/match-list");
+        }
       } else {
-        alert("Profile updated successfully!");
+        alert("Profile updated successfully! Please complete all required fields (name, age, gender, location).");
       }
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -273,7 +283,7 @@ function Profile() {
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">Account Information</h2>
-              {(!user.birthday || !user.gender || !user.occupationType) && !editing && (
+              {!isProfileComplete(user) && !editing && (
                 <div className="bg-yellow-600 text-white px-3 py-1 rounded text-sm">
                   ⚠️ Complete your profile
                 </div>
@@ -402,9 +412,9 @@ function Profile() {
                 ) : (
                   <p className="text-gray-500 italic">Occupation: Not set</p>
                 )}
-                {(!user.birthday || !user.gender || !user.occupationType) && (
+                {!isProfileComplete(user) && (
                   <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded text-sm text-blue-300">
-                    💡 Click "Edit Profile" to complete your profile information. Date of birth and gender are required.
+                    💡 Click "Edit Profile" to complete your profile information. Name, age, gender, and location are required.
                   </div>
                 )}
               </div>

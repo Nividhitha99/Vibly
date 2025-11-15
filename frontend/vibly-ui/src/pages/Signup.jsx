@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { isProfileComplete } from "../utils/profileCheck";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -22,10 +23,28 @@ export default function Signup() {
       // Save userId to localStorage for future use
       if (res.data.userId) {
         localStorage.setItem("userId", res.data.userId);
+        
+        // Check if profile is complete (unlikely for new signup, but check anyway)
+        try {
+          const userRes = await axios.get(`http://localhost:5001/api/user/${res.data.userId}`);
+          const user = userRes.data;
+          
+          if (isProfileComplete(user)) {
+            // Profile is complete - go directly to matches
+            navigate("/match-list");
+          } else {
+            // Profile incomplete - go to profile to fill mandatory fields
+            navigate("/profile");
+          }
+        } catch (userErr) {
+          // If we can't fetch user, go to profile as fallback
+          console.error("Error fetching user after signup:", userErr);
+          navigate("/profile");
+        }
+      } else {
+        // Fallback if no userId
+        navigate("/profile");
       }
-
-      // Redirect to profile page to complete profile details
-      navigate("/profile");
     } catch (err) {
       console.error(err);
       const errorMessage = err.response?.data?.error || "Signup failed";
