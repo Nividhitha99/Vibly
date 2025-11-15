@@ -24,7 +24,8 @@ export default function Signup() {
         localStorage.setItem("userId", res.data.userId);
       }
 
-      navigate("/preferences");
+      // Redirect to profile page to complete profile details
+      navigate("/profile");
     } catch (err) {
       console.error(err);
       const errorMessage = err.response?.data?.error || "Signup failed";
@@ -44,33 +45,39 @@ export default function Signup() {
 
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Name *"
+          required
           className="w-full p-3 mb-4 rounded bg-[#2a3551] text-white"
           onChange={(e) => setName(e.target.value)}
         />
 
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Email *"
+          required
           className="w-full p-3 mb-4 rounded bg-[#2a3551] text-white"
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Password *"
+          required
           className="w-full p-3 mb-6 rounded bg-[#2a3551] text-white"
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button className="w-full p-3 rounded bg-blue-600 text-white font-semibold">
+        <button 
+          type="submit"
+          className="w-full p-3 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+        >
           Create Account
         </button>
 
         <p className="text-gray-400 text-center mt-4">
           Already have an account?
           <span
-            className="text-blue-400 cursor-pointer"
+            className="text-blue-400 cursor-pointer hover:underline"
             onClick={() => navigate("/login")}
           >
             {" "}

@@ -24,3 +24,18 @@ exports.getUser = async (id) => {
   const db = await getDb();
   return db.data.users.find(u => u.id === id);
 };
+
+exports.updateUser = async (id, updateData) => {
+  const db = await getDb();
+  const user = db.data.users.find(u => u.id === id);
+  
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Update only provided fields
+  Object.assign(user, updateData);
+  await db.write();
+  
+  return user;
+};

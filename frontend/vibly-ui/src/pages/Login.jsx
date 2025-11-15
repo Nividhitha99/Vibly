@@ -12,18 +12,18 @@ export default function Login() {
     e?.preventDefault();
     setError("");
     
-    try {
-      const res = await axios.post(
-        "http://localhost:5001/api/user/login",
-        { email, password }
-      );
+  try {
+    const res = await axios.post(
+      "http://localhost:5001/api/user/login",
+      { email, password }
+    );
 
-      localStorage.setItem("userId", res.data.userId);
+    localStorage.setItem("userId", res.data.userId);
       navigate("/preferences");
-    } catch (err) {
+  } catch (err) {
       setError(err.response?.data?.error || "Invalid credentials");
-    }
-  };
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -59,7 +59,7 @@ export default function Login() {
         <div className="text-center mb-12 lg:mb-16 animate-fade-in">
           <h1 className="text-7xl lg:text-8xl font-bold mb-4 bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', letterSpacing: '-0.02em' }}>
             Vibely
-          </h1>
+        </h1>
           <p className="text-2xl lg:text-3xl text-white/90 font-normal mb-4" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', letterSpacing: '-0.01em' }}>
             Find Your OffScreen Pair!
           </p>
@@ -88,15 +88,15 @@ export default function Login() {
                       Email
                     </label>
                     <div className="relative">
-                      <input
-                        type="email"
+        <input
+          type="email"
                         className="w-full px-5 py-4 rounded-xl bg-white/5 text-white placeholder-white/40 border border-white/10 focus:border-blue-400/50 focus:bg-white/10 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-300 group-hover:border-white/20"
                         style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
                         placeholder="Enter your email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
                         required
-                      />
+        />
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-blue-500/20 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none blur-sm"></div>
                     </div>
                   </div>
@@ -107,15 +107,15 @@ export default function Login() {
                       Password
                     </label>
                     <div className="relative">
-                      <input
-                        type="password"
+        <input
+          type="password"
                         className="w-full px-5 py-4 rounded-xl bg-white/5 text-white placeholder-white/40 border border-white/10 focus:border-blue-400/50 focus:bg-white/10 focus:ring-2 focus:ring-blue-400/20 focus:outline-none transition-all duration-300 group-hover:border-white/20"
                         style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
                         placeholder="Enter your password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
                         required
-                      />
+        />
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/0 via-purple-500/20 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none blur-sm"></div>
                     </div>
                   </div>
@@ -128,14 +128,14 @@ export default function Login() {
                   )}
 
                   {/* Login Button */}
-                  <button
+        <button
                     type="submit"
                     className="w-full relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-2xl hover:shadow-purple-500/50 group"
                     style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
-                  >
+        >
                     <span className="relative z-10">Login</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                  </button>
+        </button>
                 </form>
 
                 {/* Sign up link */}
@@ -147,9 +147,9 @@ export default function Login() {
                       className="text-blue-300 hover:text-blue-200 font-medium hover:underline transition-colors duration-200"
                       style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
                     >
-                      Sign up
+            Sign up
                     </Link>
-                  </p>
+        </p>
                 </div>
               </div>
             </div>
