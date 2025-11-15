@@ -72,6 +72,7 @@ function Preferences() {
         {activeTab === "movies" && (
           <TasteSelector
             label="Favorite Movies"
+            type="movies"
             selections={movies}
             setSelections={setMovies}
           />
@@ -79,6 +80,7 @@ function Preferences() {
         {activeTab === "tv" && (
           <TasteSelector
             label="Favorite TV Shows"
+            type="tv"
             selections={tv}
             setSelections={setTv}
           />
@@ -86,6 +88,7 @@ function Preferences() {
         {activeTab === "music" && (
           <TasteSelector
             label="Favorite Artists"
+            type="music"
             selections={music}
             setSelections={setMusic}
           />
