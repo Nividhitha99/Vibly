@@ -35,7 +35,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", (data) => {
-    io.to(data.room).emit("receiveMessage", data);
+    const roomId = data.room || data.roomId;
+    if (roomId) {
+      io.to(roomId).emit("receiveMessage", data);
+    }
   });
 
   socket.on("joinRoom", (roomId) => {

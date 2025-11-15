@@ -70,6 +70,16 @@ function Navbar() {
               Matches
             </Link>
             <Link
+              to="/chat"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                isActive("/chat")
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+              }`}
+            >
+              Chat
+            </Link>
+            <Link
               to="/jam-session"
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 isActive("/jam-session")
@@ -163,6 +173,17 @@ function Navbar() {
                 }`}
               >
                 Matches
+              </Link>
+              <Link
+                to="/chat"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  isActive("/chat")
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-300 hover:bg-gray-700"
+                }`}
+              >
+                Chat
               </Link>
               <Link
                 to="/jam-session"
