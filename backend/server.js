@@ -21,8 +21,18 @@ const io = socketio(server, {
   },
 });
 
+// Store user socket mappings
+const userSockets = new Map();
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
+  // Register user socket
+  socket.on("registerUser", (userId) => {
+    userSockets.set(userId, socket.id);
+    socket.userId = userId;
+    console.log(`User ${userId} registered with socket ${socket.id}`);
+  });
 
   socket.on("sendMessage", (data) => {
     io.to(data.room).emit("receiveMessage", data);
@@ -33,9 +43,22 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    if (socket.userId) {
+      userSockets.delete(socket.userId);
+      console.log(`User ${socket.userId} disconnected`);
+    } else {
+      console.log("User disconnected");
+    }
   });
 });
+
+// Export function to emit notifications
+io.emitToUser = (userId, event, data) => {
+  const socketId = userSockets.get(userId);
+  if (socketId) {
+    io.to(socketId).emit(event, data);
+  }
+};
 
 const PORT = process.env.PORT || 5001;
 

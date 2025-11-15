@@ -78,6 +78,7 @@ app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/ai-chat", require("./routes/chatAIroutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/follow", require("./routes/followRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 // HEALTH CHECK
 app.get("/health", (req, res) => {

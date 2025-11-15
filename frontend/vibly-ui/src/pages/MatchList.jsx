@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import TinderCard from "../components/TinderCard";
 
 function MatchList() {
+  const navigate = useNavigate();
   const [matches, setMatches] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -10,6 +12,8 @@ function MatchList() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedUser, setMatchedUser] = useState(null);
   const [currentUserName, setCurrentUserName] = useState("");
+  const [showLikeSentModal, setShowLikeSentModal] = useState(false);
+  const [likedUserName, setLikedUserName] = useState("");
 
   // Debug: Log when currentIndex changes
   useEffect(() => {
@@ -109,21 +113,35 @@ function MatchList() {
         console.log("Response match status:", response.data.match);
         console.log("Response success:", response.data.success);
         
-        // Check if it's a mutual match
+        // Check if it's a mutual match (both users liked each other)
         const isMatch = response.data.match === "confirmed";
         console.log("Is match?", isMatch);
+        console.log("Match status:", response.data.match);
         
         if (isMatch) {
-          // It's a match!
+          // It's a confirmed match! Both users liked each other
           console.log("🎉 It's a match!", matches[index].name);
           console.log("Setting matched user:", matches[index]);
-          setMatchedUser({ ...matches[index] }); // Create a new object to ensure state update
+          
+          // Set both states together
+          const matchedUserData = { ...matches[index] };
+          setMatchedUser(matchedUserData);
           setShowMatchModal(true);
-          console.log("Match modal state - showMatchModal:", true, "matchedUser:", matches[index]);
+          
+          console.log("Match modal state - showMatchModal: true, matchedUser:", matchedUserData.name);
+          
           // Don't advance yet - wait for user to close modal
           return;
         } else {
-          console.log("Not a match yet (status:", response.data.match, "), moving to next");
+          // Not a match yet - just a like (pending)
+          console.log("You liked", matches[index].name, "- waiting for them to like you back");
+          
+          // Show "like sent" modal
+          setLikedUserName(matches[index].name);
+          setShowLikeSentModal(true);
+          
+          // Don't advance yet - wait for user to close modal
+          return;
         }
       } catch (err) {
         console.error("Error sending like:", err);
@@ -177,6 +195,18 @@ function MatchList() {
     });
   };
 
+  const handleCloseLikeSentModal = () => {
+    setShowLikeSentModal(false);
+    setLikedUserName("");
+    // Move to next match after closing modal
+    setCurrentIndex(prevIndex => {
+      if (prevIndex < matches.length - 1) {
+        return prevIndex + 1;
+      }
+      return prevIndex;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-white text-xl bg-[#0f172a]">
@@ -214,7 +244,111 @@ function MatchList() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4 relative">
-      {/* Match Modal - Beautiful Design */}
+      {/* Like Sent Modal - Shows when user likes someone (not a match yet) */}
+      {showLikeSentModal && likedUserName && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[9999] animate-fadeIn"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            animation: 'fadeIn 0.3s ease-in'
+          }}
+          onClick={handleCloseLikeSentModal}
+        >
+          <div 
+            className="bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl p-12 text-center max-w-lg mx-4 shadow-2xl transform transition-all animate-scaleIn"
+            style={{
+              animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Heart Icon */}
+            <div className="relative mb-6">
+              <div 
+                className="text-9xl animate-pulse"
+                style={{
+                  filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.5))',
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                }}
+              >
+                💚
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 
+              className="text-5xl font-extrabold mb-6 text-white tracking-tight"
+              style={{
+                textShadow: '0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
+                letterSpacing: '-0.02em'
+              }}
+            >
+              Nice!
+            </h2>
+
+            {/* Message */}
+            <p className="text-xl text-white/90 mb-8 font-medium leading-relaxed">
+              We've let <span className="font-bold">{likedUserName}</span> know that you would like to connect!
+            </p>
+
+            {/* Subtitle */}
+            <p className="text-base text-white/80 mb-8">
+              If they like you back, you'll both be notified! 🎉
+            </p>
+
+            {/* Continue Button */}
+            <button
+              onClick={handleCloseLikeSentModal}
+              className="w-full bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
+              style={{
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              Continue Swiping
+            </button>
+          </div>
+
+          {/* Add CSS animations */}
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes scaleIn {
+              from { 
+                transform: scale(0.5);
+                opacity: 0;
+              }
+              to { 
+                transform: scale(1);
+                opacity: 1;
+              }
+            }
+            @keyframes pulse {
+              0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+              }
+              50% { 
+                transform: scale(1.1);
+                opacity: 0.9;
+              }
+            }
+            .animate-fadeIn {
+              animation: fadeIn 0.3s ease-in;
+            }
+            .animate-scaleIn {
+              animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* Match Modal - Beautiful Design - Shows when it's a mutual match */}
       {showMatchModal && matchedUser && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[9999] animate-fadeIn"
@@ -260,7 +394,7 @@ function MatchList() {
                 letterSpacing: '-0.02em'
               }}
             >
-              It's a Match!
+              Wow, It's a Match!
             </h2>
 
             {/* Names with Heart */}
@@ -312,12 +446,58 @@ function MatchList() {
               Start a conversation and see where it goes!
             </p>
 
-            {/* Continue Button */}
+            {/* Action Buttons */}
+            <div className="space-y-4 mb-6">
+              {/* Chat Button */}
+              <button
+                onClick={() => {
+                  handleCloseMatchModal();
+                  navigate(`/chat?matchId=${matchedUser.userId}`);
+                }}
+                className="w-full bg-white text-pink-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                💬 Chat with them
+              </button>
+
+              {/* Jam Session Button */}
+              <button
+                onClick={() => {
+                  handleCloseMatchModal();
+                  navigate(`/jam-session?matchId=${matchedUser.userId}`);
+                }}
+                className="w-full bg-white text-pink-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                🎵 Start a Jam Session
+              </button>
+
+              {/* Watch Party Button */}
+              <button
+                onClick={() => {
+                  handleCloseMatchModal();
+                  navigate(`/watch-party?matchId=${matchedUser.userId}`);
+                }}
+                className="w-full bg-white text-pink-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                🎬 Start a Watch Party
+              </button>
+            </div>
+
+            {/* Continue Swiping Button */}
             <button
               onClick={handleCloseMatchModal}
-              className="bg-white text-pink-600 hover:bg-gray-50 px-12 py-4 rounded-full text-xl font-bold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-3xl"
+              className="w-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 px-8 py-3 rounded-full text-base font-semibold transition-all duration-300 hover:scale-105"
               style={{
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
               }}
             >
               Continue Swiping

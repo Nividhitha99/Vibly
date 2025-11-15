@@ -19,7 +19,8 @@ async function getDb() {
         matches: [],
         messages: [],
         watchlist: [],
-        followers: []
+        followers: [],
+        notifications: []
       });
       
       await dbInstance.read();
@@ -30,7 +31,8 @@ async function getDb() {
         matches: [],
         messages: [],
         watchlist: [],
-        followers: []
+        followers: [],
+        notifications: []
       };
       
       db = dbInstance;

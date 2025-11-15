@@ -1,4 +1,19 @@
 const getDb = require("../utils/db");
+const { createNotification } = require("./notificationController");
+const getUser = require("../services/userService").getUser;
+
+// Get io instance lazily to avoid circular dependency
+let ioInstance = null;
+const getIO = () => {
+  if (!ioInstance) {
+    try {
+      ioInstance = require("../server");
+    } catch (err) {
+      console.error("Could not get io instance:", err);
+    }
+  }
+  return ioInstance;
+};
 
 exports.sendLike = async (req, res) => {
   try {
@@ -62,6 +77,28 @@ exports.sendLike = async (req, res) => {
       status: "pending"
     });
     await db.write();
+
+    // Create notification for the person who was liked
+    try {
+      const fromUserData = await getUser(fromUser);
+      if (fromUserData) {
+        const notification = await createNotification(
+          toUser,
+          "like",
+          `${fromUserData.name} wants to connect with you!`,
+          fromUser
+        );
+        
+        // Emit real-time notification via Socket.IO
+        const io = getIO();
+        if (io && io.emitToUser) {
+          io.emitToUser(toUser, "notification", notification);
+        }
+      }
+    } catch (err) {
+      console.error("Error creating notification:", err);
+      // Don't fail the like request if notification fails
+    }
 
     res.json({ success: true, match: "pending" });
 

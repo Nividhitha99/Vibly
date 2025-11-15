@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import Notifications from "./Notifications";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ function Navbar() {
           
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-6">
+            {userId && <Notifications />}
             <Link
               to="/profile"
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
@@ -124,6 +126,11 @@ function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden pb-4 border-t border-gray-700 mt-2 pt-4">
             <div className="flex flex-col gap-2">
+              {userId && (
+                <div className="px-3 py-2">
+                  <Notifications />
+                </div>
+              )}
               <Link
                 to="/profile"
                 onClick={() => setMobileMenuOpen(false)}
