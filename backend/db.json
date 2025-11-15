@@ -17,6 +17,12 @@
       "name": "test1",
       "email": "test1@gmail.com",
       "password": "$2b$10$4M1YZ2Ydvr4Fiq3uzZsz5uTAnuPTI6GA/NSnCiphxF5awrhvEJtG6"
+    },
+    {
+      "id": "c3d145a8-0e92-4781-8230-f9811a377f31",
+      "name": "subi",
+      "email": "subi@gmail.com",
+      "password": "$2b$10$kJ9wnMVDJSigWHp/x.MvfuEyju2ltkGbzKxwCDIAorTw.Vw1hbys6"
     }
   ],
   "tastes": [
