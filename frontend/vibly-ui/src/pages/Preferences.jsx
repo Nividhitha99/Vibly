@@ -18,7 +18,7 @@ function Preferences() {
         return;
       }
 
-      await axios.post("http://localhost:5000/api/user/preferences", {
+      await axios.post("http://localhost:5001/api/user/preferences", {
         userId,
         movies,
         shows: tv, // Map tv to shows for backend

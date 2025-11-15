@@ -13,7 +13,7 @@ export default function Signup() {
 
     try {
       // Call the backend register endpoint
-      const res = await axios.post("http://localhost:5000/api/user/register", {
+      const res = await axios.post("http://localhost:5001/api/user/register", {
         name,
         email,
         password,

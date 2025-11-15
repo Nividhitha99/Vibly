@@ -38,10 +38,13 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
-  console.log("API endpoints available at http://localhost:5000/api");
-  console.log("Health check: http://localhost:5000/health");
+const PORT = process.env.PORT || 5001;
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`API endpoints: http://localhost:${PORT}/api`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
 });
+
 
 module.exports = io;

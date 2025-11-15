@@ -8,10 +8,8 @@ export default function Login() {
 
   const handleLogin = async () => {
   try {
-    const res = await axios.post(
-      "http://localhost:5000/api/user/login",
-      { email, password }
-    );
+    const res = await axios.post("/api/user/login", { email, password });
+
 
     localStorage.setItem("userId", res.data.userId);
     window.location.href = "/preferences";

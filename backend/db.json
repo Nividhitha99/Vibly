@@ -17,6 +17,12 @@
       "name": "test1",
       "email": "test1@gmail.com",
       "password": "$2b$10$4M1YZ2Ydvr4Fiq3uzZsz5uTAnuPTI6GA/NSnCiphxF5awrhvEJtG6"
+    },
+    {
+      "id": "a784a237-5cc2-4386-b4ee-8a3e66480e2c",
+      "name": "PriyankaBarik",
+      "email": "pihubarik13@gmail.com",
+      "password": "$2b$10$PWarC.n6XKT/HZ7Hfm9WvOMucL/1XzwXYVBunvJJ9SZJLItvYj752"
     }
   ],
   "tastes": [
