@@ -1,7 +1,6 @@
 const router = require("express").Router();
+const matchingController = require("../controllers/matchingController");
 
-router.get("/", (req, res) => {
-  res.json([{ name: "Mock Match", score: 85 }]);
-});
+router.get("/:userId", matchingController.getMatches);
 
 module.exports = router;

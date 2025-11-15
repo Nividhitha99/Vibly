@@ -1,0 +1,17 @@
+const matchingService = require("../services/matchingService");
+
+exports.getMatches = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const matches = await matchingService.getMatches(userId);
+
+    res.json({
+      count: matches.length,
+      matches
+    });
+
+  } catch (error) {
+    console.log("Match error:", error);
+    res.status(500).json({ error: "Failed to fetch matches" });
+  }
+};

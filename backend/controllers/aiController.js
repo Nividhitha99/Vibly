@@ -1,55 +1,26 @@
-const { generateEmbedding } = require("../services/embeddingService");
-const { OpenAI } = require("openai");
+const embeddingService = require("../services/embeddingService");
 
-// Initialize OpenAI client
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_KEY
-});
-
-// Controller to generate embedding
-exports.generateEmbedding = async (req, res) => {
+exports.createEmbedding = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { userId, movies, music, shows } = req.body;
 
-    if (!text) return res.status(400).json({ error: "No text provided" });
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
 
-    const embedding = await generateEmbedding(text);
+    const vector = await embeddingService.generateEmbedding(
+      userId,
+      movies || [],
+      music || [],
+      shows || []
+    );
 
-    res.json({ embedding });
-
-  } catch (err) {
-    console.log("Embedding error:", err);
-    res.status(500).json({ error: "Embedding failed" });
-  }
-};
-
-// Controller to generate conversation starters
-exports.generateConversationStarters = async (req, res) => {
-  try {
-    const { sharedTastes } = req.body;
-
-    if (!sharedTastes) return res.status(400).json({ error: "sharedTastes required" });
-
-    const prompt = `
-    Create 3 conversation starters for two people who share the following tastes:
-    ${sharedTastes.join(", ")}.
-    Make them friendly, fun, and specific to the shared interests.
-    `;
-
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are an assistant generating engaging conversation starters." },
-        { role: "user", content: prompt }
-      ]
+    res.json({
+      message: "Embedding generated",
+      vectorLength: vector.length
     });
 
-    const starters = response.choices[0].message.content;
-
-    res.json({ starters });
-
-  } catch (err) {
-    console.log("AI Error:", err);
-    res.status(500).json({ error: "Conversation starter generation failed" });
+  } catch (error) {
+    res.status(500).json({ error: "Embedding generation failed" });
   }
 };

@@ -1,12 +1,21 @@
-module.exports = function cosineSimilarity(a, b) {
-    let dot = 0, normA = 0, normB = 0;
+module.exports = function cosineSimilarity(vecA, vecB) {
+    if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+  
+    for (let i = 0; i < vecA.length; i++) {
+      dot += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
     }
   
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    normA = Math.sqrt(normA);
+    normB = Math.sqrt(normB);
+  
+    if (normA === 0 || normB === 0) return 0;
+  
+    return dot / (normA * normB);
   };
   

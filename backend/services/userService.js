@@ -1,31 +1,26 @@
 const getDb = require("../utils/db");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
-exports.createUser = async (userData) => {
+exports.createUser = async (data) => {
   const db = await getDb();
-  const id = uuidv4();
+  const id = crypto.randomUUID();
 
   db.data.users.push({
     id,
-    ...userData
+    ...data
   });
 
   await db.write();
+
   return { id };
+};
+
+exports.findByEmail = async (email) => {
+  const db = await getDb();
+  return db.data.users.find(u => u.email === email);
 };
 
 exports.getUser = async (id) => {
   const db = await getDb();
   return db.data.users.find(u => u.id === id);
 };
-
-exports.updateUser = async (id, updateData) => {
-  const db = await getDb();
-  const user = db.data.users.find(u => u.id === id);
-  if (!user) return null;
-
-  Object.assign(user, updateData);
-  await db.write();
-  return user;
-};
-
