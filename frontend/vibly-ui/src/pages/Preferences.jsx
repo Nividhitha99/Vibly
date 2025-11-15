@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TasteSelector from "../components/TasteSelector";
 import axios from "axios";
 
@@ -7,6 +7,36 @@ function Preferences() {
   const [tv, setTv] = useState([]);
   const [music, setMusic] = useState([]);
   const [activeTab, setActiveTab] = useState("movies");
+  const [loading, setLoading] = useState(true);
+
+  // Load existing preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:5001/api/taste/${userId}`);
+        const taste = response.data;
+
+        if (taste) {
+          setMovies(taste.movies || []);
+          setTv(taste.shows || []);
+          setMusic(taste.music || []);
+        }
+      } catch (err) {
+        console.error("Error loading preferences:", err);
+        // If no preferences found, that's okay - start with empty arrays
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPreferences();
+  }, []);
 
   const handleSubmit = async () => {
     try {
@@ -33,6 +63,14 @@ function Preferences() {
       alert(errorMessage);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
+        <div className="text-xl">Loading your preferences...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f172a] flex flex-col items-center pt-12 text-white">

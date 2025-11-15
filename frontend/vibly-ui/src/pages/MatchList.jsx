@@ -235,8 +235,6 @@ function MatchList() {
     );
   }
 
-  const displayMatch = matches[currentIndex];
-
   // Debug: Log modal state on every render
   if (showMatchModal || matchedUser) {
     console.log("🔍 Modal Debug - showMatchModal:", showMatchModal, "matchedUser:", matchedUser?.name);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
 function TasteSelector({ label, type, selections, setSelections }) {
@@ -55,12 +55,22 @@ function TasteSelector({ label, type, selections, setSelections }) {
     { code: "MX", name: "Mexico" }
   ];
 
-  // Load genres on mount
-  useEffect(() => {
-    loadGenres();
+  // Determine API endpoint based on type
+  const getSearchEndpoint = useCallback(() => {
+    switch (type) {
+      case "movies":
+        return "http://localhost:5001/api/search/movies";
+      case "tv":
+        return "http://localhost:5001/api/search/tv";
+      case "music":
+        return "http://localhost:5001/api/search/artists";
+      default:
+        return null;
+    }
   }, [type]);
 
-  const loadGenres = async () => {
+  // Load genres on mount
+  const loadGenres = useCallback(async () => {
     setLoadingGenres(true);
     try {
       const endpoint = type === "movies" 
@@ -78,24 +88,14 @@ function TasteSelector({ label, type, selections, setSelections }) {
     } finally {
       setLoadingGenres(false);
     }
-  };
+  }, [type]);
 
-  // Determine API endpoint based on type
-  const getSearchEndpoint = () => {
-    switch (type) {
-      case "movies":
-        return "http://localhost:5001/api/search/movies";
-      case "tv":
-        return "http://localhost:5001/api/search/tv";
-      case "music":
-        return "http://localhost:5001/api/search/artists";
-      default:
-        return null;
-    }
-  };
+  useEffect(() => {
+    loadGenres();
+  }, [loadGenres]);
 
   // Browse with filters
-  const browseWithFilters = async () => {
+  const browseWithFilters = useCallback(async () => {
     setIsSearching(true);
     setShowResults(true); // Always show results area in browse mode
     try {
@@ -127,7 +127,7 @@ function TasteSelector({ label, type, selections, setSelections }) {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [getSearchEndpoint, selectedGenre, selectedLanguage, selectedRegion, selectedArtist, selectedYear, type, yearFilterEnabled]);
 
   // Search with debounce
   useEffect(() => {
@@ -168,7 +168,7 @@ function TasteSelector({ label, type, selections, setSelections }) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [input, type, mode]);
+  }, [input, type, mode, getSearchEndpoint]);
 
   // Auto-browse when filters change in browse mode
   useEffect(() => {
@@ -184,7 +184,7 @@ function TasteSelector({ label, type, selections, setSelections }) {
       setSearchResults([]);
       setShowResults(false);
     }
-  }, [selectedGenre, selectedLanguage, selectedRegion, selectedYear, selectedArtist, mode, type, yearFilterEnabled]);
+  }, [selectedGenre, selectedLanguage, selectedRegion, selectedYear, selectedArtist, mode, type, yearFilterEnabled, browseWithFilters]);
 
   // Close results when clicking outside
   useEffect(() => {

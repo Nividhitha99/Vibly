@@ -91,6 +91,12 @@
       "name": "Taylor (Mock)",
       "email": "taylor.mock@example.com",
       "password": "$2b$10$dummy.hash.for.mock.user.password123"
+    },
+    {
+      "id": "a4633462-793b-4aba-aa2b-866b30077ffa",
+      "name": "PriyankaBk",
+      "email": "barik.priyanka1801@gmail.com",
+      "password": "$2b$10$iajPP1Y7w8qyQe9b5DZyy.sF0pDJ59mJHP.4MzAQZiBZvJvexnj6m"
     }
   ],
   "tastes": [
@@ -842,6 +848,21 @@
       "preferredLanguages": [
         "en"
       ]
+    },
+    {
+      "userId": "a4633462-793b-4aba-aa2b-866b30077ffa",
+      "movies": [],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
     }
   ],
   "embeddings": [
@@ -8663,5 +8684,14 @@
       "status": "pending"
     }
   ],
-  "messages": []
+  "messages": [
+    {
+      "id": "1763241078756",
+      "roomId": "jam-a4633462-793b-4aba-aa2b-866b30077ffa",
+      "senderId": "a4633462-793b-4aba-aa2b-866b30077ffa",
+      "message": "hi",
+      "timestamp": 1763241078756
+    }
+  ],
+  "notifications": []
 }
