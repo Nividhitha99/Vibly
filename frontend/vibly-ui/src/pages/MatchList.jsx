@@ -593,9 +593,20 @@ function MatchList() {
               preventSwipe={['up', 'down']}
             >
               <div className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col">
-                {/* Profile Picture - Big */}
+                {/* Profile Pictures - Big */}
                 <div className="relative h-2/5 bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  {match.imageUrl ? (
+                  {match.profileImages && Array.isArray(match.profileImages) && match.profileImages.length > 0 ? (
+                    <div className="w-full h-full flex gap-1">
+                      {match.profileImages.slice(0, 2).map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`${match.name} - Image ${idx + 1}`}
+                          className={`h-full object-cover ${match.profileImages.length === 1 ? 'w-full' : 'w-1/2'}`}
+                        />
+                      ))}
+                    </div>
+                  ) : match.imageUrl ? (
                     <img
                       src={match.imageUrl}
                       alt={match.name}

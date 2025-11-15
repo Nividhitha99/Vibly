@@ -45,6 +45,12 @@ router.post("/preferences", (req, res, next) => {
   tasteController.savePreferences(req, res, next);
 });
 
+// Upload images - POST /api/user/:id/images
+router.post("/:id/images", (req, res, next) => {
+  console.log(`Upload images route hit! ID: ${req.params.id}`);
+  userController.uploadImages(req, res, next);
+});
+
 // Update profile - PUT /api/user/:id
 router.put("/:id", (req, res, next) => {
   console.log(`Update profile route hit! ID: ${req.params.id}`);

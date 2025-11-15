@@ -9,6 +9,8 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [profileImages, setProfileImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,6 +34,15 @@ function Profile() {
           jobRole: userRes.data.jobRole || "",
           company: userRes.data.company || "",
         });
+        
+        // Set profile images
+        if (userRes.data.profileImages && Array.isArray(userRes.data.profileImages)) {
+          setProfileImages(userRes.data.profileImages);
+          setImagePreviews(userRes.data.profileImages);
+        } else {
+          setProfileImages([]);
+          setImagePreviews([]);
+        }
 
         // Get taste preferences
         const tasteRes = await axios.get(`http://localhost:5001/api/taste/${userId}`);
@@ -45,6 +56,52 @@ function Profile() {
 
     fetchProfile();
   }, [navigate]);
+
+  const handleImageUpload = (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const newImages = [...profileImages];
+      const newPreviews = [...imagePreviews];
+      
+      if (index < 2) {
+        newImages[index] = base64String;
+        newPreviews[index] = base64String;
+      } else {
+        // If trying to add more than 2, replace the last one
+        newImages[1] = base64String;
+        newPreviews[1] = base64String;
+      }
+      
+      setProfileImages(newImages);
+      setImagePreviews(newPreviews);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (index) => {
+    const newImages = [...profileImages];
+    const newPreviews = [...imagePreviews];
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+    setProfileImages(newImages);
+    setImagePreviews(newPreviews);
+  };
 
   const handleUpdate = async () => {
     // Validate required fields - check if they're set (either in form or already in user)
@@ -63,7 +120,25 @@ function Profile() {
 
     try {
       const userId = localStorage.getItem("userId");
-      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, formData);
+      
+      // Update profile first
+      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, {
+        ...formData,
+        profileImages: profileImages.length > 0 ? profileImages : undefined
+      });
+      
+      // If images were uploaded, also send them via the images endpoint
+      if (profileImages.length > 0) {
+        try {
+          await axios.post(`http://localhost:5001/api/user/${userId}/images`, {
+            images: profileImages
+          });
+        } catch (imgErr) {
+          console.error("Error uploading images:", imgErr);
+          // Don't fail the whole update if image upload fails
+        }
+      }
+      
       setUser(res.data.user);
       setEditing(false);
       
@@ -156,6 +231,14 @@ function Profile() {
                       jobRole: user?.jobRole || "",
                       company: user?.company || "",
                     });
+                    // Reset images to original
+                    if (user?.profileImages && Array.isArray(user.profileImages)) {
+                      setProfileImages(user.profileImages);
+                      setImagePreviews(user.profileImages);
+                    } else {
+                      setProfileImages([]);
+                      setImagePreviews([]);
+                    }
                   }}
                   className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
                 >
@@ -173,6 +256,76 @@ function Profile() {
               {(!user.birthday || !user.gender || !user.occupationType) && !editing && (
                 <div className="bg-yellow-600 text-white px-3 py-1 rounded text-sm">
                   ⚠️ Complete your profile
+                </div>
+              )}
+            </div>
+
+            {/* Profile Images Display/Upload */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Profile Images (Optional - Max 2)</h3>
+              {!editing ? (
+                <div className="flex gap-4">
+                  {user.profileImages && Array.isArray(user.profileImages) && user.profileImages.length > 0 ? (
+                    user.profileImages.map((img, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={img}
+                          alt={`Profile ${idx + 1}`}
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-600"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">No images uploaded. Images will be auto-generated based on your gender when you save your profile.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[0, 1].map((index) => (
+                      <div key={index} className="relative">
+                        <label className="block text-sm font-semibold mb-2">
+                          Image {index + 1} {index === 0 ? "(Optional)" : "(Optional)"}
+                        </label>
+                        {imagePreviews[index] ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreviews[index]}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-lg border-2 border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload(e, index)}
+                              className="hidden"
+                              id={`image-upload-${index}`}
+                            />
+                            <label
+                              htmlFor={`image-upload-${index}`}
+                              className="cursor-pointer text-blue-400 hover:text-blue-300"
+                            >
+                              Click to upload image
+                            </label>
+                            <p className="text-xs text-gray-500 mt-2">Max 5MB</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-400">
+                    💡 If you don't upload images, we'll generate profile pictures based on your gender using AI.
+                  </p>
                 </div>
               )}
             </div>

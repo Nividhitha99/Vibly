@@ -75,6 +75,33 @@ exports.getMatches = async (userId) => {
     console.log(`[Matching] Processing match with ${otherUser.name} (${other.userId})`);
 
     // -----------------------------------
+    // GENDER FILTER
+    // -----------------------------------
+    const currentUser = allUsers.find(u => u.id === userId);
+    if (currentUser && currentUser.lookingFor && otherUser.gender) {
+      const lookingForArray = Array.isArray(currentUser.lookingFor) 
+        ? currentUser.lookingFor 
+        : [currentUser.lookingFor];
+      
+      if (!lookingForArray.includes(otherUser.gender.toLowerCase())) {
+        console.log(`[Matching] Skipping ${otherUser.name} - gender preference mismatch (looking for: ${lookingForArray.join(", ")}, found: ${otherUser.gender})`);
+        continue; // skip this match entirely
+      }
+    }
+    
+    // Also check if other user is looking for current user's gender
+    if (otherUser.lookingFor && currentUser && currentUser.gender) {
+      const otherLookingForArray = Array.isArray(otherUser.lookingFor) 
+        ? otherUser.lookingFor 
+        : [otherUser.lookingFor];
+      
+      if (!otherLookingForArray.includes(currentUser.gender.toLowerCase())) {
+        console.log(`[Matching] Skipping ${otherUser.name} - they're not looking for ${currentUser.gender}`);
+        continue; // skip this match entirely
+      }
+    }
+
+    // -----------------------------------
     // REGION FILTER
     // -----------------------------------
     if (currentTaste.regionPreference === "same" && currentTaste.region) {
@@ -392,6 +419,8 @@ exports.getMatches = async (userId) => {
         userId: other.userId,
         name: otherUser?.name,
         email: otherUser?.email,
+        profileImages: otherUser?.profileImages || null,
+        imageUrl: otherUser?.imageUrl || null, // Keep for backward compatibility
         score: Math.max(0, score) // Ensure score is at least 0 for display
       });
     } else {

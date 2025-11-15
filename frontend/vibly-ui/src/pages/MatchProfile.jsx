@@ -81,9 +81,20 @@ function MatchProfile() {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
-      {/* Profile Picture - Big */}
+      {/* Profile Pictures - Big */}
       <div className="relative h-96 bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-        {user.imageUrl ? (
+        {user.profileImages && Array.isArray(user.profileImages) && user.profileImages.length > 0 ? (
+          <div className="w-full h-full flex gap-2">
+            {user.profileImages.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt={`${user.name} - Image ${idx + 1}`}
+                className={`w-full h-full object-cover ${user.profileImages.length === 1 ? '' : 'w-1/2'}`}
+              />
+            ))}
+          </div>
+        ) : user.imageUrl ? (
           <img
             src={user.imageUrl}
             alt={user.name}
