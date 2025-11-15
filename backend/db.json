@@ -229,7 +229,50 @@
     {
       "userId": "487d671b-3343-4511-af54-0062b3cf80dd",
       "movies": [
-        "talk to me"
+        {
+          "id": 1242898,
+          "title": "Predator: Badlands",
+          "releaseDate": "2025-11-07",
+          "overview": "Cast out from his clan, a young Predator finds an unlikely ally in a damaged android and embarks on a treacherous journey in search of the ultimate adversary.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/ef2QSeBkrYhAdfsWGXmp0lvH0T1.jpg",
+          "genreIds": [
+            28,
+            878,
+            12
+          ],
+          "popularity": 294.6409,
+          "voteAverage": 7.279,
+          "type": "movie"
+        },
+        {
+          "id": 1054867,
+          "title": "One Battle After Another",
+          "releaseDate": "2025-09-26",
+          "overview": "Washed-up revolutionary Bob exists in a state of stoned paranoia, surviving off-grid with his spirited, self-reliant daughter, Willa. When his evil nemesis resurfaces after 16 years and she goes missing, the former radical scrambles to find her, father and daughter both battling the consequences of his past.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/m1jFoahEbeQXtx4zArT2FKdbNIj.jpg",
+          "genreIds": [
+            28,
+            53,
+            80
+          ],
+          "popularity": 257.0325,
+          "voteAverage": 7.665,
+          "type": "movie"
+        },
+        {
+          "id": 1197137,
+          "title": "Black Phone 2",
+          "releaseDate": "2025-10-17",
+          "overview": "Four years after escaping The Grabber, Finney Blake is struggling with his life after captivity. When his sister Gwen begins receiving calls in her dreams from the black phone and seeing disturbing visions of three boys being stalked at a winter camp, the siblings become determined to solve the mystery and confront a killer who has grown more powerful in death and more significant to them than either could imagine.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/xUWUODKPIilQoFUzjHM6wKJkP3Y.jpg",
+          "genreIds": [
+            27,
+            53
+          ],
+          "popularity": 219.9612,
+          "voteAverage": 7.136,
+          "type": "movie"
+        }
       ],
       "music": [],
       "shows": [],
@@ -943,6 +986,37 @@
       "preferredLanguages": [
         "en"
       ]
+    },
+    {
+      "userId": "a4633462-793b-4aba-aa2b-866b30077ffa",
+      "movies": [
+        {
+          "id": 1062722,
+          "title": "Frankenstein",
+          "releaseDate": "2025-10-17",
+          "overview": "Dr. Victor Frankenstein, a brilliant but egotistical scientist, brings a creature to life in a monstrous experiment that ultimately leads to the undoing of both the creator and his tragic creation.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/g4JtvGlQO7DByTI6frUobqvSL3R.jpg",
+          "genreIds": [
+            18,
+            27,
+            14
+          ],
+          "popularity": 841.4715,
+          "voteAverage": 7.888,
+          "type": "movie"
+        }
+      ],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
     }
   ],
   "embeddings": [
@@ -11214,5 +11288,13 @@
       "createdAt": 1763246279458
     }
   ],
-  "messages": []
+  "messages": [
+    {
+      "id": "1763247957290",
+      "roomId": "watch-487d671b-3343-4511-af54-0062b3cf80dd",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "Hi",
+      "timestamp": 1763247957290
+    }
+  ]
 }
