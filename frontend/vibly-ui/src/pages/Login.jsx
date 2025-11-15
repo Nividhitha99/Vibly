@@ -177,7 +177,7 @@ export default function Login() {
         {/* Bottom text with left-to-right animation */}
         <div className="mt-16 text-center overflow-hidden">
           <p className="text-white/80 text-3xl lg:text-4xl font-semibold animate-slide-in-left" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-            Connect with movies, music and more..
+            Connect with Movies, Music & More....
           </p>
         </div>
       </div>

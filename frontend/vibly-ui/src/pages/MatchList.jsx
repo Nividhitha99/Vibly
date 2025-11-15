@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import TinderCard from "../components/TinderCard";
+import GeminiLoading from "../components/GeminiLoading";
 
 function MatchList() {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ function MatchList() {
   const [filterByAge, setFilterByAge] = useState(true);
   const [filterByLocation, setFilterByLocation] = useState(true);
   const [filteredMatches, setFilteredMatches] = useState([]);
+  const [showGeminiLoading, setShowGeminiLoading] = useState(true);
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
 
   // Debug: Log when currentIndex changes
   useEffect(() => {
@@ -35,8 +38,13 @@ function MatchList() {
         if (!userId) {
           console.error("User ID not found in localStorage");
           setLoading(false);
+          setShowGeminiLoading(false);
           return;
         }
+
+        // Show Gemini loading for at least 3 seconds for better UX
+        const minLoadingTime = 3000;
+        const startTime = Date.now();
 
         console.log("Fetching matches for user:", userId);
         const res = await axios.get(`http://localhost:5001/api/match/${userId}`);
@@ -84,16 +92,23 @@ function MatchList() {
         
         const uniqueMatches = Array.from(uniqueMap.values());
         console.log(`Found ${sortedMatches.length} matches, ${uniqueMatches.length} unique after deduplication`);
-        console.log("Unique match IDs:", uniqueMatches.map(m => m.userId));
+        console.log("Unique match IDs:", uniqueMatches.map(m => `${m.name} (${m.userId})`));
         
         // Additional check: filter out any remaining duplicates by userId
-        const finalMatches = uniqueMatches.filter((match, index, self) => 
-          index === self.findIndex(m => m.userId === match.userId)
-        );
+        const finalMatches = uniqueMatches.filter((match, index, self) => {
+          const firstIndex = self.findIndex(m => m.userId === match.userId);
+          if (index !== firstIndex) {
+            console.warn(`[MatchList] Removing duplicate: ${match.name} (${match.userId}) at index ${index}, first occurrence at ${firstIndex}`);
+          }
+          return index === firstIndex;
+        });
         
         if (finalMatches.length !== uniqueMatches.length) {
-          console.warn(`Additional duplicates found! ${uniqueMatches.length} -> ${finalMatches.length}`);
+          console.warn(`[MatchList] Additional duplicates found! ${uniqueMatches.length} -> ${finalMatches.length}`);
         }
+        
+        // Final check: log all match names to debug
+        console.log(`[MatchList] Final matches (${finalMatches.length}):`, finalMatches.map((m, i) => `${i+1}. ${m.name} (${m.userId})`));
         
         // Ensure final matches are sorted high to low
         finalMatches.sort((a, b) => {
@@ -103,7 +118,12 @@ function MatchList() {
         });
         
         setMatches(finalMatches);
-        setFilteredMatches(finalMatches); // Initially show all matches
+        // Initialize filteredMatches with all matches before applying filters
+        setFilteredMatches(finalMatches);
+        // Don't set filtersInitialized yet - wait for applyFilters to complete
+        console.log(`[MatchList] Initialized: ${finalMatches.length} matches, filteredMatches set to ${finalMatches.length}`);
+        console.log(`[MatchList] Match names:`, finalMatches.map(m => `${m.name} (${m.userId})`));
+        
         if (finalMatches.length > 0) {
           // Fetch preferences for all matches
           finalMatches.forEach(match => {
@@ -117,14 +137,37 @@ function MatchList() {
               .then(res => {
                 setCurrentUserName(res.data.name || "You");
                 // Apply filters based on user preferences
+                // applyFilters will set filtersInitialized when done
                 applyFilters(finalMatches, res.data);
               })
-              .catch(err => console.error("Error fetching current user:", err));
+              .catch(err => {
+                console.error("Error fetching current user:", err);
+                // If we can't fetch user, just use all matches without filtering
+                setFilteredMatches(finalMatches);
+                setFiltersInitialized(true);
+              });
+          } else {
+            // No userId, use all matches without filtering
+            setFilteredMatches(finalMatches);
+            setFiltersInitialized(true);
           }
+        } else {
+          // No matches
+          setFilteredMatches([]);
+          setFiltersInitialized(true);
         }
+        
+        // Ensure minimum loading time for Gemini animation
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        
+        // Hide Gemini loading and show matches
+        setShowGeminiLoading(false);
       } catch (err) {
         console.error("Error fetching matches:", err);
         console.error("Error details:", err.response?.data);
+        setShowGeminiLoading(false);
       } finally {
         setLoading(false);
       }
@@ -229,6 +272,9 @@ function MatchList() {
     }
 
     setFilteredMatches(filtered);
+    setFiltersInitialized(true);
+    console.log(`[MatchList] Applied filters: ${filtered.length} matches after filtering (from ${matchesList.length} total)`);
+    console.log(`[MatchList] Filtered match names:`, filtered.map(m => `${m.name} (${m.userId})`));
   };
 
   const handleFilterToggle = async () => {
@@ -378,12 +424,9 @@ function MatchList() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen text-white text-xl bg-[#0f172a]">
-        Loading your matches…
-      </div>
-    );
+  // Show Gemini loading screen when first loading matches
+  if (showGeminiLoading || loading) {
+    return <GeminiLoading message="Gemini is finding matches for you" />;
   }
 
   if (matches.length === 0) {
@@ -398,6 +441,17 @@ function MatchList() {
 
   // Show filter UI first
   if (showFilters && matches.length > 0) {
+    // Calculate display count: 
+    // - If filters haven't been initialized yet, use matches.length
+    // - Otherwise, use filteredMatches.length (even if 0, to show accurate filtered count)
+    // Always use the most up-to-date count
+    // If filters have been applied, use filteredMatches.length
+    // Otherwise, use matches.length (initial state before filters)
+    const displayCount = filtersInitialized ? filteredMatches.length : matches.length;
+    console.log(`[MatchList] Filter UI - matches.length: ${matches.length}, filteredMatches.length: ${filteredMatches.length}, filtersInitialized: ${filtersInitialized}, displayCount: ${displayCount}`);
+    console.log(`[MatchList] Filter UI - Match names in matches:`, matches.map(m => `${m.name} (${m.userId})`));
+    console.log(`[MatchList] Filter UI - Match names in filteredMatches:`, filteredMatches.map(m => `${m.name} (${m.userId})`));
+    
     return (
       <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6">
         <div className="bg-gray-800 rounded-lg p-8 w-full max-w-md shadow-xl">
@@ -450,7 +504,7 @@ function MatchList() {
               onClick={handleContinueToMatches}
               className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
             >
-              View {filteredMatches.length || matches.length} Matches →
+              View {displayCount} Matches →
             </button>
             <button
               onClick={() => {

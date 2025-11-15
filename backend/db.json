@@ -11183,6 +11183,16 @@
       "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
       "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "pending"
     }
   ],
   "notifications": [
@@ -11212,6 +11222,24 @@
       "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
       "read": false,
       "createdAt": 1763246279458
+    },
+    {
+      "id": "1763248194706aygl5xe8j",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763248194706
+    },
+    {
+      "id": "1763248199696zqv9lthkw",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763248199696
     }
   ],
   "messages": []
