@@ -2,7 +2,7 @@ const { OpenAI } = require("openai");
 
 // Hardcode key locally
 const client = new OpenAI({
-  apiKey: "YOUR_OPENAI_KEY"
+  apiKey: "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"
 });
 
 exports.autoTagItem = async (title) => {
