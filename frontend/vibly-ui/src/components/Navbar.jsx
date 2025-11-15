@@ -13,8 +13,8 @@ function Navbar() {
     navigate("/login");
   };
 
-  // Don't show navbar on login and signup pages
-  if (location.pathname === "/login" || location.pathname === "/signup") {
+  // Don't show navbar on landing, login and signup pages
+  if (location.pathname === "/" || location.pathname === "/login" || location.pathname === "/signup") {
     return null;
   }
 
