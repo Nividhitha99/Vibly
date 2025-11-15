@@ -1,5 +1,5 @@
 const getDb = require("../utils/db");
-const embeddingService = require("../services/embeddingService");
+const embeddingCalculationService = require("../services/embeddingCalculationService");
 const tasteService = require("../services/tasteService");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -128,10 +128,14 @@ async function add50MockUsers() {
       birthday: birthday,
       age: age,
       region: region,
+      location: region, // Add location field
       city: city,
       lookingFor: lookingForGender,
       bio: `Hi! I'm ${firstName}, ${age} years old from ${city}, ${region}. Love movies, music, and shows!`,
       profilePicture: `https://i.pravatar.cc/150?img=${i + 1}`,
+      ageRangeMin: 18, // Default age preferences
+      ageRangeMax: 45,
+      maxDistance: 30, // Default distance preference
       createdAt: new Date().toISOString()
     };
     
@@ -190,31 +194,18 @@ async function add50MockUsers() {
   await db.write();
   console.log(`✅ Added ${newTastes.length} taste profiles to database`);
   
-  // Generate embeddings for all users (this will use Gemini)
+  // Generate embeddings for all users using the embedding calculation service
   console.log(`\n🧠 Generating embeddings using Gemini AI...`);
   console.log(`This may take a few minutes as we analyze ${newTastes.length} user profiles...\n`);
   
-  for (let i = 0; i < newTastes.length; i++) {
-    const taste = newTastes[i];
-    const user = newUsers[i];
-    
-    try {
-      console.log(`[${i + 1}/${newTastes.length}] Generating embedding for ${user.name}...`);
-      await embeddingService.generateEmbedding(
-        taste.userId,
-        taste.movies,
-        taste.music,
-        taste.shows
-      );
-      console.log(`  ✓ Embedding generated for ${user.name}`);
-      
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error(`  ✗ Failed to generate embedding for ${user.name}:`, error.message);
-      // Continue with next user
-    }
-  }
+  // Use the bulk embedding calculation service
+  const results = await embeddingCalculationService.calculateEmbeddingsForAllUsers(false);
+  
+  console.log(`\n📊 Embedding Generation Summary:`);
+  console.log(`   Total users processed: ${results.total}`);
+  console.log(`   Embeddings generated: ${results.generated}`);
+  console.log(`   Already had embeddings: ${results.skipped}`);
+  console.log(`   Errors: ${results.errors}`);
   
   console.log(`\n✅ Successfully created 50 mock users with full profiles!`);
   console.log(`\n📋 Login Credentials (all users use the same password):`);

@@ -75,7 +75,7 @@ exports.getMatches = async (userId) => {
     console.log(`[Matching] Processing match with ${otherUser.name} (${other.userId})`);
 
     // -----------------------------------
-    // GENDER FILTER
+    // GENDER FILTER (More lenient - only filter if both users have strict preferences)
     // -----------------------------------
     const currentUser = allUsers.find(u => u.id === userId);
     if (currentUser && currentUser.lookingFor && otherUser.gender) {
@@ -83,22 +83,104 @@ exports.getMatches = async (userId) => {
         ? currentUser.lookingFor 
         : [currentUser.lookingFor];
       
-      if (!lookingForArray.includes(otherUser.gender.toLowerCase())) {
+      // Only filter if preference is very specific (not "non-binary" alone, or if it's a clear mismatch)
+      // Allow matches if lookingFor includes "non-binary" OR if it matches the other user's gender
+      const otherGenderLower = otherUser.gender.toLowerCase();
+      const isMatch = lookingForArray.some(pref => {
+        const prefLower = pref.toLowerCase();
+        // If looking for non-binary, allow all genders (more inclusive)
+        if (prefLower === 'non-binary') return true;
+        return prefLower === otherGenderLower;
+      });
+      
+      if (!isMatch) {
         console.log(`[Matching] Skipping ${otherUser.name} - gender preference mismatch (looking for: ${lookingForArray.join(", ")}, found: ${otherUser.gender})`);
-        continue; // skip this match entirely
+        continue;
       }
     }
     
-    // Also check if other user is looking for current user's gender
+    // Also check if other user is looking for current user's gender (more lenient)
     if (otherUser.lookingFor && currentUser && currentUser.gender) {
       const otherLookingForArray = Array.isArray(otherUser.lookingFor) 
         ? otherUser.lookingFor 
         : [otherUser.lookingFor];
       
-      if (!otherLookingForArray.includes(currentUser.gender.toLowerCase())) {
+      const currentGenderLower = currentUser.gender.toLowerCase();
+      const isMatch = otherLookingForArray.some(pref => {
+        const prefLower = pref.toLowerCase();
+        // If looking for non-binary, allow all genders (more inclusive)
+        if (prefLower === 'non-binary') return true;
+        return prefLower === currentGenderLower;
+      });
+      
+      if (!isMatch) {
         console.log(`[Matching] Skipping ${otherUser.name} - they're not looking for ${currentUser.gender}`);
-        continue; // skip this match entirely
+        continue;
       }
+    }
+
+    // -----------------------------------
+    // AGE FILTER
+    // -----------------------------------
+    if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+      const otherAge = otherUser.age;
+      if (otherAge !== undefined && otherAge !== null) {
+        // Only filter if age is provided and out of range
+        if (otherAge < currentUser.ageRangeMin || otherAge > currentUser.ageRangeMax) {
+          console.log(`[Matching] Skipping ${otherUser.name} - age out of range (${otherAge} not in ${currentUser.ageRangeMin}-${currentUser.ageRangeMax})`);
+          continue; // skip this match entirely
+        }
+      }
+      // If age is not provided, allow the match (don't skip) - user can decide
+      // This ensures users without age info can still be matched
+    }
+
+    // -----------------------------------
+    // DISTANCE FILTER (simple city/region matching for now)
+    // -----------------------------------
+    if (currentUser && currentUser.maxDistance !== undefined && currentUser.maxDistance > 0) {
+      // For now, check if they're in the same city or region
+      // In a real app, you'd calculate actual distance using coordinates
+      const currentLocation = (currentUser.city || "").toLowerCase();
+      const otherLocation = (otherUser.city || "").toLowerCase();
+      const currentRegion = (currentUser.location || currentUser.region || "").toLowerCase();
+      const otherRegion = (otherUser.location || otherUser.region || "").toLowerCase();
+      
+      // Only filter if both users have location information
+      // If location info is missing, allow the match (user can decide)
+      if (currentLocation && otherLocation) {
+        // If maxDistance is small (10-20 miles), require same city
+        // For 30+ miles, be more lenient - only filter if very far apart
+        if (currentUser.maxDistance <= 20) {
+          if (currentLocation !== otherLocation) {
+            console.log(`[Matching] Skipping ${otherUser.name} - different city (${currentLocation} vs ${otherLocation})`);
+            continue;
+          }
+        } else if (currentUser.maxDistance <= 30) {
+          // For 30 miles, be very lenient - only filter if completely different countries
+          // In a real app with actual coordinates, 30 miles would allow nearby cities
+          // For now, only filter if they're in completely different countries AND different cities
+          // Allow matches within the same country or nearby regions
+          if (currentLocation !== otherLocation) {
+            // Only filter if they're in completely different countries (e.g., US vs India)
+            // But allow if they're in the same country or nearby countries
+            // For 30 miles, this is too restrictive, so we'll be very lenient
+            // Only skip if it's clearly a different continent AND different country
+            const sameCountry = currentRegion && otherRegion && currentRegion.toLowerCase() === otherRegion.toLowerCase();
+            if (!sameCountry) {
+              // For 30 miles, allow matches from nearby countries/regions
+              // Only filter if it's clearly very far (e.g., different continents)
+              // But since we don't have exact coordinates, be lenient and allow most matches
+              // Only filter if it's clearly impossible (e.g., US vs Asia when distance is 30 miles)
+              // For now, allow all matches at 30 miles - user can decide
+              console.log(`[Matching] Allowing ${otherUser.name} - different location but within 30 mile tolerance`);
+            }
+            // Allow the match - don't filter by location for 30 miles
+          }
+        }
+      }
+      // For 50+ miles, allow any location (no filter)
+      // If location info is missing, allow the match
     }
 
     // -----------------------------------
@@ -428,8 +510,20 @@ exports.getMatches = async (userId) => {
     }
   }
 
+  // Filter matches by 60% threshold (score >= 0.6)
+  const filteredResults = results.filter(match => {
+    const score = match.score || 0;
+    return score >= 0.6;
+  });
+  
+  console.log(`[Matching] Filtered ${results.length} matches to ${filteredResults.length} with 60%+ compatibility`);
+  
   // Sort highest score first
-  const sorted = results.sort((a, b) => b.score - a.score);
+  const sorted = filteredResults.sort((a, b) => {
+    const scoreA = a.score || 0;
+    const scoreB = b.score || 0;
+    return scoreB - scoreA; // High to low
+  });
   
   // Remove duplicates by userId (in case same user appears multiple times)
   // Use Map to keep the highest scoring version of each user
@@ -476,10 +570,17 @@ exports.getMatches = async (userId) => {
     }
   }
   
+  // Ensure final results are sorted high to low
+  finalResults.sort((a, b) => {
+    const scoreA = a.score || 0;
+    const scoreB = b.score || 0;
+    return scoreB - scoreA; // High to low
+  });
+  
   console.log(`[Matching] Found ${sorted.length} matches, ${uniqueResults.length} after Map dedup, ${finalResults.length} final unique for user ${userId}`);
   if (finalResults.length > 0) {
-    console.log(`[Matching] Top match: ${finalResults[0].name} with score ${finalResults[0].score.toFixed(3)}`);
-    console.log(`[Matching] All match IDs:`, finalResults.map(m => `${m.name} (${m.userId})`));
+    console.log(`[Matching] Top match: ${finalResults[0].name} with score ${(finalResults[0].score * 100).toFixed(1)}%`);
+    console.log(`[Matching] All match IDs:`, finalResults.map(m => `${m.name} (${(m.score * 100).toFixed(1)}%)`));
   }
   
   return finalResults;

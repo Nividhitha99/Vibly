@@ -1,5 +1,5 @@
 const getDb = require("../utils/db");
-const embeddingService = require("../services/embeddingService");
+const embeddingCalculationService = require("../services/embeddingCalculationService");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 
@@ -321,57 +321,15 @@ async function addMockData() {
   await db.write();
   console.log("\nGenerating embeddings for mock users...");
   
-  // Generate mock embeddings (1536 dimensions for text-embedding-3-small)
-  // These are simple mock vectors that will allow matching to work
-  const generateMockEmbedding = (seed) => {
-    const vector = [];
-    for (let i = 0; i < 1536; i++) {
-      // Create a deterministic vector based on seed
-      const value = Math.sin(seed + i) * 0.1 + Math.random() * 0.01;
-      vector.push(value);
-    }
-    // Normalize the vector
-    const magnitude = Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0));
-    return vector.map(v => v / magnitude);
-  };
+  // Use the embedding calculation service to generate embeddings
+  // This will automatically handle all users and generate real embeddings using Gemini
+  const results = await embeddingCalculationService.calculateEmbeddingsForAllUsers(false);
   
-  // Generate embeddings for each mock user
-  for (let i = 0; i < mockTastes.length; i++) {
-    const taste = mockTastes[i];
-    const user = mockUsers.find(u => u.id === taste.userId);
-    console.log(`\nGenerating embedding for ${user.name}...`);
-    
-    try {
-      // Try to generate real embedding first
-      await embeddingService.generateEmbedding(
-        taste.userId,
-        taste.movies,
-        taste.music,
-        taste.shows
-      );
-      console.log(`✓ Real embedding generated for ${user.name}`);
-    } catch (error) {
-      // If that fails, use mock embedding
-      console.log(`⚠ Using mock embedding for ${user.name} (OpenAI API not available)`);
-      
-      const db = await getDb();
-      const seed = i * 1000 + taste.movies.length + taste.music.length + taste.shows.length;
-      const mockVector = generateMockEmbedding(seed);
-      
-      const existing = db.data.embeddings.find(e => e.userId === taste.userId);
-      if (existing) {
-        existing.vector = mockVector;
-      } else {
-        db.data.embeddings.push({
-          userId: taste.userId,
-          vector: mockVector
-        });
-      }
-      
-      await db.write();
-      console.log(`✓ Mock embedding saved for ${user.name}`);
-    }
-  }
+  console.log(`\n📊 Embedding Generation Summary:`);
+  console.log(`   Total users processed: ${results.total}`);
+  console.log(`   Embeddings generated: ${results.generated}`);
+  console.log(`   Already had embeddings: ${results.skipped}`);
+  console.log(`   Errors: ${results.errors}`);
 
   console.log("\n✅ Mock data added successfully!");
   console.log("\n📋 Login Credentials:");

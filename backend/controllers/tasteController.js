@@ -1,5 +1,5 @@
 const tasteService = require("../services/tasteService");
-const embeddingService = require("../services/embeddingService");
+const embeddingCalculationService = require("../services/embeddingCalculationService");
 
 exports.savePreferences = async (req, res) => {
   try {
@@ -34,24 +34,15 @@ exports.savePreferences = async (req, res) => {
       weights: weights || { movies: 0.4, music: 0.4, shows: 0.2 }
     });
 
-    // Generate embedding automatically after saving preferences
-    // Only generate if at least one preference is provided
+    // Automatically calculate embedding after saving preferences
+    // This ensures the user will have matches
     const hasPreferences = moviesArray.length > 0 || musicArray.length > 0 || showsArray.length > 0;
     if (hasPreferences) {
-      console.log(`[TasteController] Generating embedding for user ${userId} with ${moviesArray.length} movies, ${musicArray.length} music, ${showsArray.length} shows`);
-      // Run embedding generation asynchronously without blocking the response
-      // This prevents the server from crashing if embedding generation fails
-      embeddingService.generateEmbedding(userId, moviesArray, musicArray, showsArray)
-        .then(() => {
-          console.log(`✓ Embedding generated successfully for user ${userId}`);
-        })
-        .catch((embeddingError) => {
-          console.error("✗ Failed to generate embedding (non-fatal):", embeddingError.message);
-          console.error("✗ Embedding error stack:", embeddingError.stack);
-          // Don't fail the request if embedding generation fails
-        });
+      console.log(`[TasteController] Calculating embedding for user ${userId} with ${moviesArray.length} movies, ${musicArray.length} music, ${showsArray.length} shows`);
+      // Use the embedding calculation service which handles all edge cases
+      embeddingCalculationService.ensureEmbeddingForUser(userId);
     } else {
-      console.log(`Skipping embedding generation for user ${userId} - no preferences provided`);
+      console.log(`[TasteController] Skipping embedding calculation for user ${userId} - no preferences provided`);
     }
 
     res.json({ message: "Preferences saved successfully" });

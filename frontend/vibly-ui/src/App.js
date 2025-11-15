@@ -11,6 +11,7 @@ import Chat from "./pages/Chat";
 import JamSession from "./pages/JamSession";
 import WatchParty from "./pages/WatchParty";
 import Profile from "./pages/Profile";
+import AgePreference from "./pages/AgePreference";
 import RedirectToLogin from "./components/RedirectToLogin";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/" element={<RedirectToLogin />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/age-preference" element={<AgePreference />} />
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/match-list" element={<MatchList />} />
         <Route path="/pending-likes" element={<PendingLikes />} />

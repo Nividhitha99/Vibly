@@ -1,5 +1,6 @@
 const userService = require("../services/userService");
 const imageGenerationService = require("../services/imageGenerationService");
+const embeddingCalculationService = require("../services/embeddingCalculationService");
 const bcrypt = require("bcrypt");
 
 exports.register = async (req, res) => {
@@ -105,6 +106,18 @@ exports.updateProfile = async (req, res) => {
       return res.status(400).json({ error: "Gender is required" });
     }
 
+    // Calculate age from birthday if birthday is provided
+    if (finalBirthday) {
+      const today = new Date();
+      const birthDate = new Date(finalBirthday);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      updateData.age = age;
+    }
+
     // Handle image uploads (if provided as base64)
     // If images are not provided and user doesn't have images, generate them
     if (!updateData.profileImages || !Array.isArray(updateData.profileImages) || updateData.profileImages.length === 0) {
@@ -126,6 +139,18 @@ exports.updateProfile = async (req, res) => {
 
     const updatedUser = await userService.updateUser(userId, updateData);
     const { password, ...userWithoutPassword } = updatedUser;
+
+    // If user has preferences, ensure embedding exists (for matching)
+    // Run in background to not block response, but ensure it happens
+    const tasteService = require("../services/tasteService");
+    tasteService.getTaste(userId).then(taste => {
+      if (taste && ((taste.movies?.length || 0) + (taste.music?.length || 0) + (taste.shows?.length || 0) > 0)) {
+        console.log(`[UserController] User has preferences, ensuring embedding is up to date...`);
+        embeddingCalculationService.ensureEmbeddingForUser(userId);
+      }
+    }).catch(err => {
+      console.error("[UserController] Error checking preferences:", err);
+    });
 
     res.json({ message: "Profile updated successfully", user: userWithoutPassword });
   } catch (err) {

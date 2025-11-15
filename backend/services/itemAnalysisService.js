@@ -59,7 +59,12 @@ Return a JSON object in this EXACT format:
     });
 
     const content = result.response.text();
-    const analysis = JSON.parse(content);
+    // Remove markdown code blocks if present (```json ... ```)
+    let cleanedContent = content.trim();
+    if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    }
+    const analysis = JSON.parse(cleanedContent);
 
     console.log(`[Item Analysis] ✅ Analyzed "${title}" - Found ${analysis.psychologicalTraits?.length || 0} traits`);
 
@@ -245,7 +250,12 @@ Return a JSON object in this EXACT format:
     });
 
     const content = result.response.text();
-    const comprehensiveProfile = JSON.parse(content);
+    // Remove markdown code blocks if present (```json ... ```)
+    let cleanedContent = content.trim();
+    if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    }
+    const comprehensiveProfile = JSON.parse(cleanedContent);
 
     // Add the individual analyses for reference
     comprehensiveProfile.individualAnalyses = itemAnalyses;

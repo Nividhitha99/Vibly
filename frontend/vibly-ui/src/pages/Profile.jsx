@@ -29,6 +29,8 @@ function Profile() {
           age: userRes.data.age || "",
           gender: userRes.data.gender || "",
           birthday: userRes.data.birthday || "",
+          location: userRes.data.location || "",
+          city: userRes.data.city || "",
           occupationType: userRes.data.occupationType || "",
           university: userRes.data.university || "",
           jobRole: userRes.data.jobRole || "",
@@ -121,11 +123,27 @@ function Profile() {
     try {
       const userId = localStorage.getItem("userId");
       
-      // Update profile first
-      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, {
-        ...formData,
-        profileImages: profileImages.length > 0 ? profileImages : undefined
-      });
+      // Prepare update data - include all form fields
+      const updateData = {
+        name: formData.name,
+        age: formData.age,
+        gender: formData.gender,
+        birthday: formData.birthday,
+        location: formData.location,
+        city: formData.city,
+        occupationType: formData.occupationType,
+        university: formData.university,
+        jobRole: formData.jobRole,
+        company: formData.company,
+      };
+      
+      // Only include profileImages if they exist
+      if (profileImages.length > 0) {
+        updateData.profileImages = profileImages;
+      }
+      
+      // Update profile
+      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, updateData);
       
       // If images were uploaded, also send them via the images endpoint
       if (profileImages.length > 0) {
@@ -158,7 +176,7 @@ function Profile() {
           "This will help us find better matches for you."
         );
         if (goToPreferences) {
-          navigate("/preferences");
+          navigate("/age-preference");
         }
       } else {
         alert("Profile updated successfully!");
@@ -198,7 +216,7 @@ function Profile() {
                   Edit Profile
                 </button>
                 <button
-                  onClick={() => navigate("/preferences")}
+                  onClick={() => navigate("/age-preference")}
                   className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
                 >
                   Go to Preference Browsing
@@ -226,6 +244,8 @@ function Profile() {
                       age: user?.age || "",
                       gender: user?.gender || "",
                       birthday: user?.birthday || "",
+                      location: user?.location || "",
+                      city: user?.city || "",
                       occupationType: user?.occupationType || "",
                       university: user?.university || "",
                       jobRole: user?.jobRole || "",
@@ -349,6 +369,11 @@ function Profile() {
                 ) : (
                   <p className="text-gray-500 italic">Birthday: Not set</p>
                 )}
+                {user.location || user.city ? (
+                  <p className="text-gray-300"><span className="font-semibold">Location:</span> {user.city ? `${user.city}, ${user.location || ''}`.trim() : user.location}</p>
+                ) : (
+                  <p className="text-gray-500 italic">Location: Not set</p>
+                )}
                 {user.occupationType ? (
                   <div>
                     <p className="text-gray-300"><span className="font-semibold">Occupation:</span> {user.occupationType === "student" ? "Student" : "Employed"}</p>
@@ -432,6 +457,28 @@ function Profile() {
                     className="w-full p-3 rounded bg-gray-700 text-white"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">City</label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      placeholder="e.g., New York"
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">State/Region</label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      placeholder="e.g., NY, California"
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2">Occupation Type</label>
                   <select
@@ -477,6 +524,44 @@ function Profile() {
                     </div>
                   </>
                 )}
+                
+                {/* Save and Cancel buttons at bottom of form */}
+                <div className="flex gap-4 mt-6 pt-6 border-t border-gray-700">
+                  <button
+                    onClick={handleUpdate}
+                    className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+                  >
+                    💾 Save Changes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditing(false);
+                      setFormData({
+                        name: user?.name || "",
+                        age: user?.age || "",
+                        gender: user?.gender || "",
+                        birthday: user?.birthday || "",
+                        location: user?.location || "",
+                        city: user?.city || "",
+                        occupationType: user?.occupationType || "",
+                        university: user?.university || "",
+                        jobRole: user?.jobRole || "",
+                        company: user?.company || "",
+                      });
+                      // Reset images to original
+                      if (user?.profileImages && Array.isArray(user.profileImages)) {
+                        setProfileImages(user.profileImages);
+                        setImagePreviews(user.profileImages);
+                      } else {
+                        setProfileImages([]);
+                        setImagePreviews([]);
+                      }
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -537,14 +622,14 @@ function Profile() {
             {(!taste.movies || taste.movies.length === 0) &&
              (!taste.music || taste.music.length === 0) &&
              (!taste.shows || taste.shows.length === 0) && (
-              <p className="text-gray-400">No preferences set yet. <button onClick={() => navigate("/preferences")} className="text-blue-400 hover:underline">Add preferences</button></p>
+              <p className="text-gray-400">No preferences set yet. <button onClick={() => navigate("/age-preference")} className="text-blue-400 hover:underline">Add preferences</button></p>
             )}
           </div>
         )}
 
         <div className="flex gap-4">
           <button
-            onClick={() => navigate("/preferences")}
+            onClick={() => navigate("/age-preference")}
             className="bg-green-600 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition flex-1"
           >
             Go to Preference Browsing

@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TasteSelector from "../components/TasteSelector";
 import GeminiLoading from "../components/GeminiLoading";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Preferences() {
   const [movies, setMovies] = useState([]);
@@ -10,7 +10,9 @@ function Preferences() {
   const [music, setMusic] = useState([]);
   const [activeTab, setActiveTab] = useState("movies");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const checkForMatches = async (userId, minWaitTime = 8000, maxAttempts = 30, delay = 2000) => {
     const startTime = Date.now();
@@ -39,6 +41,33 @@ function Preferences() {
     return true; // Proceed anyway after max attempts
   };
 
+  // Load existing preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          setIsLoadingPreferences(false);
+          return;
+        }
+
+        const res = await axios.get(`http://localhost:5001/api/taste/${userId}`);
+        if (res.data) {
+          setMovies(res.data.movies || []);
+          setTv(res.data.shows || []);
+          setMusic(res.data.music || []);
+        }
+      } catch (err) {
+        console.error("Error loading preferences:", err);
+        // If no preferences exist, that's okay
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+
+    loadPreferences();
+  }, []);
+
   const handleSubmit = async () => {
     try {
       const userId = localStorage.getItem("userId");
@@ -49,11 +78,11 @@ function Preferences() {
         return;
       }
 
-      // Show Gemini loading screen - use setTimeout to ensure React renders it
+      // Show Gemini loading screen immediately
       setIsProcessing(true);
       
-      // Force a small delay to ensure the loading screen renders
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Force a small delay to ensure the loading screen renders before API call
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // Save preferences
       await axios.post("http://localhost:5001/api/user/preferences", {
@@ -77,9 +106,13 @@ function Preferences() {
     }
   };
 
-  // Show Gemini loading screen while processing
+  // Show Gemini loading screen while processing or loading preferences
   if (isProcessing) {
     return <GeminiLoading message="Gemini is finding your matches" />;
+  }
+
+  if (isLoadingPreferences) {
+    return <GeminiLoading message="Loading your preferences" />;
   }
 
   return (
