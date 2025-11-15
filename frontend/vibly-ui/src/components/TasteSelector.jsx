@@ -64,9 +64,9 @@ function TasteSelector({ label, type, selections, setSelections }) {
     setLoadingGenres(true);
     try {
       const endpoint = type === "movies" 
-        ? "http://localhost:5000/api/search/genres/movies"
+        ? "http://localhost:5001/api/search/genres/movies"
         : type === "tv"
-        ? "http://localhost:5000/api/search/genres/tv"
+        ? "http://localhost:5001/api/search/genres/tv"
         : null;
       
       if (endpoint) {
@@ -84,11 +84,11 @@ function TasteSelector({ label, type, selections, setSelections }) {
   const getSearchEndpoint = () => {
     switch (type) {
       case "movies":
-        return "http://localhost:5000/api/search/movies";
+        return "http://localhost:5001/api/search/movies";
       case "tv":
-        return "http://localhost:5000/api/search/tv";
+        return "http://localhost:5001/api/search/tv";
       case "music":
-        return "http://localhost:5000/api/search/artists";
+        return "http://localhost:5001/api/search/artists";
       default:
         return null;
     }
