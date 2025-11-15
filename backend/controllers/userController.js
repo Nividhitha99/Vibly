@@ -69,8 +69,47 @@ exports.getUser = async (req, res) => {
     const user = await userService.getUser(req.params.id);
     if (!user) return res.status(404).json({ error: "Not found" });
 
-    res.json(user);
+    // Don't send password
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
   } catch (err) {
     res.status(500).json({ error: "Error fetching user" });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const updateData = req.body;
+
+    // Remove password from update data if present
+    delete updateData.password;
+
+    // Get existing user to check if required fields are already set
+    const existingUser = await userService.getUser(userId);
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if required fields are present (either in update or already in user)
+    const finalBirthday = updateData.birthday !== undefined ? updateData.birthday : existingUser.birthday;
+    const finalGender = updateData.gender !== undefined ? updateData.gender : existingUser.gender;
+
+    // Validate required fields - must be present after update
+    if (!finalBirthday || finalBirthday === "") {
+      return res.status(400).json({ error: "Date of birth is required" });
+    }
+
+    if (!finalGender || finalGender === "") {
+      return res.status(400).json({ error: "Gender is required" });
+    }
+
+    const updatedUser = await userService.updateUser(userId, updateData);
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    res.json({ message: "Profile updated successfully", user: userWithoutPassword });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ error: "Failed to update profile", details: err.message });
   }
 };

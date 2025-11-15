@@ -45,6 +45,12 @@ router.post("/preferences", (req, res, next) => {
   tasteController.savePreferences(req, res, next);
 });
 
+// Update profile - PUT /api/user/:id
+router.put("/:id", (req, res, next) => {
+  console.log(`Update profile route hit! ID: ${req.params.id}`);
+  userController.updateProfile(req, res, next);
+});
+
 // Get user by ID - must be LAST because it matches any GET /:id
 router.get("/:id", (req, res, next) => {
   // Don't match "register" or "login" as IDs

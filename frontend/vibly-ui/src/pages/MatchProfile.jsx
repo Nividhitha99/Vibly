@@ -10,10 +10,14 @@ function MatchProfile() {
   const [loading, setLoading] = useState(true);
   const [conversationStarters, setConversationStarters] = useState([]);
   const [loadingStarters, setLoadingStarters] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [checkingFollow, setCheckingFollow] = useState(true);
 
   useEffect(() => {
     const fetchMatchProfile = async () => {
       try {
+        const userId = localStorage.getItem("userId");
+        
         // Get user info
         const userRes = await axios.get(`http://localhost:5001/api/user/${id}`);
         setMatch(userRes.data);
@@ -21,10 +25,23 @@ function MatchProfile() {
         // Get taste preferences
         const tasteRes = await axios.get(`http://localhost:5001/api/taste/${id}`);
         setTaste(tasteRes.data);
+
+        // Check follow status
+        if (userId && userId !== id) {
+          try {
+            const followRes = await axios.get(
+              `http://localhost:5001/api/follow/status?followerId=${userId}&followingId=${id}`
+            );
+            setIsFollowing(followRes.data.following);
+          } catch (err) {
+            console.error("Error checking follow status:", err);
+          }
+        }
       } catch (err) {
         console.error("Error fetching match profile:", err);
       } finally {
         setLoading(false);
+        setCheckingFollow(false);
       }
     };
 
@@ -63,6 +80,30 @@ function MatchProfile() {
     }
   };
 
+  const handleFollow = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+      if (isFollowing) {
+        await axios.post("http://localhost:5001/api/follow/unfollow", {
+          followerId: userId,
+          followingId: id
+        });
+        setIsFollowing(false);
+        alert("Unfollowed successfully");
+      } else {
+        await axios.post("http://localhost:5001/api/follow/follow", {
+          followerId: userId,
+          followingId: id
+        });
+        setIsFollowing(true);
+        alert("Following now!");
+      }
+    } catch (err) {
+      console.error("Error following/unfollowing:", err);
+      alert("Failed to update follow status");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-white text-xl">
@@ -90,8 +131,43 @@ function MatchProfile() {
 
       <div className="max-w-4xl mx-auto">
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h1 className="text-3xl font-bold mb-2">{match.name}</h1>
-          <p className="text-gray-400">{match.email}</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">{match.name}</h1>
+              <p className="text-gray-400 mb-3">{match.email}</p>
+              <div className="space-y-1 text-sm text-gray-300">
+                {match.age && <p><span className="font-semibold">Age:</span> {match.age}</p>}
+                {match.gender && <p><span className="font-semibold">Gender:</span> {match.gender}</p>}
+                {match.birthday && <p><span className="font-semibold">Birthday:</span> {new Date(match.birthday).toLocaleDateString()}</p>}
+                {match.occupationType && (
+                  <div>
+                    <p><span className="font-semibold">Occupation:</span> {match.occupationType === "student" ? "Student" : "Employed"}</p>
+                    {match.occupationType === "student" && match.university && (
+                      <p className="ml-4"><span className="font-semibold">University:</span> {match.university}</p>
+                    )}
+                    {match.occupationType === "job" && (
+                      <>
+                        {match.jobRole && <p className="ml-4"><span className="font-semibold">Role:</span> {match.jobRole}</p>}
+                        {match.company && <p className="ml-4"><span className="font-semibold">Company:</span> {match.company}</p>}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {!checkingFollow && localStorage.getItem("userId") !== id && (
+              <button
+                onClick={handleFollow}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  isFollowing
+                    ? "bg-gray-600 hover:bg-gray-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {isFollowing ? "✓ Following" : "+ Follow"}
+              </button>
+            )}
+          </div>
         </div>
 
         {taste && (

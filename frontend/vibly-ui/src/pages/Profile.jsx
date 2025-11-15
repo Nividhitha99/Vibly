@@ -7,6 +7,8 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [taste, setTaste] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -20,6 +22,16 @@ function Profile() {
         // Get user info
         const userRes = await axios.get(`http://localhost:5001/api/user/${userId}`);
         setUser(userRes.data);
+        setFormData({
+          name: userRes.data.name || "",
+          age: userRes.data.age || "",
+          gender: userRes.data.gender || "",
+          birthday: userRes.data.birthday || "",
+          occupationType: userRes.data.occupationType || "",
+          university: userRes.data.university || "",
+          jobRole: userRes.data.jobRole || "",
+          company: userRes.data.company || "",
+        });
 
         // Get taste preferences
         const tasteRes = await axios.get(`http://localhost:5001/api/taste/${userId}`);
@@ -33,6 +45,55 @@ function Profile() {
 
     fetchProfile();
   }, [navigate]);
+
+  const handleUpdate = async () => {
+    // Validate required fields - check if they're set (either in form or already in user)
+    const finalBirthday = formData.birthday || user?.birthday;
+    const finalGender = formData.gender || user?.gender;
+
+    if (!finalBirthday || finalBirthday === "") {
+      alert("Please enter your date of birth. This field is required.");
+      return;
+    }
+    
+    if (!finalGender || finalGender === "") {
+      alert("Please select your gender. This field is required.");
+      return;
+    }
+
+    try {
+      const userId = localStorage.getItem("userId");
+      const res = await axios.put(`http://localhost:5001/api/user/${userId}`, formData);
+      setUser(res.data.user);
+      setEditing(false);
+      
+      // Check if profile is now complete
+      const isProfileComplete = res.data.user.birthday && res.data.user.gender && res.data.user.occupationType;
+      const hasPreferences = taste && (
+        (taste.movies && taste.movies.length > 0) ||
+        (taste.music && taste.music.length > 0) ||
+        (taste.shows && taste.shows.length > 0)
+      );
+      
+      if (isProfileComplete && !hasPreferences) {
+        // Profile is complete but preferences are not set
+        const goToPreferences = window.confirm(
+          "Profile updated successfully! 🎉\n\n" +
+          "Your profile is complete. Would you like to set your entertainment preferences now?\n\n" +
+          "This will help us find better matches for you."
+        );
+        if (goToPreferences) {
+          navigate("/preferences");
+        }
+      } else {
+        alert("Profile updated successfully!");
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.details || "Failed to update profile";
+      alert(errorMessage);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("userId");
@@ -53,26 +114,218 @@ function Profile() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">My Profile</h1>
           <div className="flex gap-4">
-            <button
-              onClick={() => navigate("/preferences")}
-              className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Edit Preferences
-            </button>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-            >
-              Logout
-            </button>
+            {!editing ? (
+              <>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Edit Profile
+                </button>
+                <button
+                  onClick={() => navigate("/preferences")}
+                  className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+                >
+                  Go to Preference Browsing
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleUpdate}
+                  className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false);
+                    setFormData({
+                      name: user?.name || "",
+                      age: user?.age || "",
+                      gender: user?.gender || "",
+                      birthday: user?.birthday || "",
+                      occupationType: user?.occupationType || "",
+                      university: user?.university || "",
+                      jobRole: user?.jobRole || "",
+                      company: user?.company || "",
+                    });
+                  }}
+                  className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         {user && (
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 className="text-2xl font-semibold mb-4">Account Information</h2>
-            <p className="text-gray-300 mb-2"><span className="font-semibold">Name:</span> {user.name}</p>
-            <p className="text-gray-300"><span className="font-semibold">Email:</span> {user.email}</p>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold">Account Information</h2>
+              {(!user.birthday || !user.gender || !user.occupationType) && !editing && (
+                <div className="bg-yellow-600 text-white px-3 py-1 rounded text-sm">
+                  ⚠️ Complete your profile
+                </div>
+              )}
+            </div>
+            
+            {!editing ? (
+              <div className="space-y-3">
+                <p className="text-gray-300"><span className="font-semibold">Name:</span> {user.name}</p>
+                <p className="text-gray-300"><span className="font-semibold">Email:</span> {user.email}</p>
+                {user.age ? (
+                  <p className="text-gray-300"><span className="font-semibold">Age:</span> {user.age}</p>
+                ) : (
+                  <p className="text-gray-500 italic">Age: Not set</p>
+                )}
+                {user.gender ? (
+                  <p className="text-gray-300"><span className="font-semibold">Gender:</span> {user.gender}</p>
+                ) : (
+                  <p className="text-gray-500 italic">Gender: Not set</p>
+                )}
+                {user.birthday ? (
+                  <p className="text-gray-300"><span className="font-semibold">Birthday:</span> {new Date(user.birthday).toLocaleDateString()}</p>
+                ) : (
+                  <p className="text-gray-500 italic">Birthday: Not set</p>
+                )}
+                {user.occupationType ? (
+                  <div>
+                    <p className="text-gray-300"><span className="font-semibold">Occupation:</span> {user.occupationType === "student" ? "Student" : "Employed"}</p>
+                    {user.occupationType === "student" && (
+                      user.university ? (
+                        <p className="text-gray-300 ml-4"><span className="font-semibold">University:</span> {user.university}</p>
+                      ) : (
+                        <p className="text-gray-500 italic ml-4">University: Not set</p>
+                      )
+                    )}
+                    {user.occupationType === "job" && (
+                      <>
+                        {user.jobRole ? (
+                          <p className="text-gray-300 ml-4"><span className="font-semibold">Role:</span> {user.jobRole}</p>
+                        ) : (
+                          <p className="text-gray-500 italic ml-4">Role: Not set</p>
+                        )}
+                        {user.company ? (
+                          <p className="text-gray-300 ml-4"><span className="font-semibold">Company:</span> {user.company}</p>
+                        ) : (
+                          <p className="text-gray-500 italic ml-4">Company: Not set</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">Occupation: Not set</p>
+                )}
+                {(!user.birthday || !user.gender || !user.occupationType) && (
+                  <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded text-sm text-blue-300">
+                    💡 Click "Edit Profile" to complete your profile information. Date of birth and gender are required.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Name</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full p-3 rounded bg-gray-700 text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Age</label>
+                    <input
+                      type="number"
+                      min="13"
+                      max="120"
+                      value={formData.age}
+                      onChange={(e) => setFormData({...formData, age: e.target.value})}
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Gender *</label>
+                    <select
+                      required
+                      value={formData.gender}
+                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    >
+                      <option value="">Select Gender *</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Birthday *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.birthday}
+                    onChange={(e) => setFormData({...formData, birthday: e.target.value})}
+                    className="w-full p-3 rounded bg-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Occupation Type</label>
+                  <select
+                    value={formData.occupationType}
+                    onChange={(e) => setFormData({...formData, occupationType: e.target.value})}
+                    className="w-full p-3 rounded bg-gray-700 text-white"
+                  >
+                    <option value="">Select Occupation</option>
+                    <option value="student">Student</option>
+                    <option value="job">Employed</option>
+                  </select>
+                </div>
+                {formData.occupationType === "student" && (
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">University</label>
+                    <input
+                      type="text"
+                      value={formData.university}
+                      onChange={(e) => setFormData({...formData, university: e.target.value})}
+                      className="w-full p-3 rounded bg-gray-700 text-white"
+                    />
+                  </div>
+                )}
+                {formData.occupationType === "job" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Job Role</label>
+                      <input
+                        type="text"
+                        value={formData.jobRole}
+                        onChange={(e) => setFormData({...formData, jobRole: e.target.value})}
+                        className="w-full p-3 rounded bg-gray-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Company</label>
+                      <input
+                        type="text"
+                        value={formData.company}
+                        onChange={(e) => setFormData({...formData, company: e.target.value})}
+                        className="w-full p-3 rounded bg-gray-700 text-white"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -138,6 +391,12 @@ function Profile() {
 
         <div className="flex gap-4">
           <button
+            onClick={() => navigate("/preferences")}
+            className="bg-green-600 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-green-700 transition flex-1"
+          >
+            Go to Preference Browsing
+          </button>
+          <button
             onClick={() => navigate("/match-list")}
             className="bg-blue-600 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition flex-1"
           >
@@ -150,4 +409,3 @@ function Profile() {
 }
 
 export default Profile;
-

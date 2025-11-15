@@ -14,7 +14,7 @@ export default function Login() {
     );
 
     localStorage.setItem("userId", res.data.userId);
-    window.location.href = "/preferences";
+    window.location.href = "/profile";
   } catch (err) {
     setError("Invalid credentials");
   }

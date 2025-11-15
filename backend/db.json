@@ -23,6 +23,19 @@
       "name": "test2",
       "email": "test2@gmail.com",
       "password": "$2b$10$lO2HJKKJuiAU40sAuoFi3OXnKdNgKTYQa0.zTxV63TKHqH4iX7jLW"
+    },
+    {
+      "id": "8557d5d0-5a28-47d2-9f0b-f524de12d9de",
+      "name": "sindhu",
+      "email": "sindhu@gmail.com",
+      "password": "$2b$10$fj1uZrLHNmfiV9.JiAHLn.kyNXQ0FuUKWl0OxwQT6eLF5UwReWIUa",
+      "age": "27",
+      "gender": "female",
+      "birthday": "1999-01-21",
+      "occupationType": "student",
+      "university": "UMD",
+      "jobRole": "",
+      "company": ""
     }
   ],
   "tastes": [
