@@ -1,4 +1,4 @@
-const db = require("../utils/db");
+const getDb = require("../utils/db");
 
 exports.sendLike = async (req, res) => {
   try {
@@ -6,6 +6,13 @@ exports.sendLike = async (req, res) => {
 
     if (!fromUser || !toUser) {
       return res.status(400).json({ error: "Missing user IDs" });
+    }
+
+    const db = await getDb();
+    
+    // Initialize matches array if it doesn't exist
+    if (!db.data.matches) {
+      db.data.matches = [];
     }
 
     // Check if the other user already liked back
@@ -46,6 +53,13 @@ exports.sendLike = async (req, res) => {
 exports.getMatchStatus = async (req, res) => {
   try {
     const { userId } = req.params;
+
+    const db = await getDb();
+    
+    // Initialize matches array if it doesn't exist
+    if (!db.data.matches) {
+      db.data.matches = [];
+    }
 
     const matches = db.data.matches.filter(
       m => m.fromUser === userId || m.toUser === userId

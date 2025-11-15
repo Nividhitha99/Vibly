@@ -1,4 +1,4 @@
-const db = require("../utils/db");
+const getDb = require("../utils/db");
 const { autoTagItem } = require("../services/autoTagService");
 
 exports.addToWatchlist = async (req, res) => {
@@ -7,6 +7,13 @@ exports.addToWatchlist = async (req, res) => {
 
     if (!userId || !type || !title) {
       return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const db = await getDb();
+    
+    // Initialize watchlist array if it doesn't exist
+    if (!db.data.watchlist) {
+      db.data.watchlist = [];
     }
 
     const tags = await autoTagItem(title); 
@@ -37,6 +44,13 @@ exports.addToWatchlist = async (req, res) => {
 exports.getWatchlist = async (req, res) => {
   try {
     const { userId } = req.params;
+
+    const db = await getDb();
+    
+    // Initialize watchlist array if it doesn't exist
+    if (!db.data.watchlist) {
+      db.data.watchlist = [];
+    }
 
     const list = db.data.watchlist.filter(i => i.userId === userId);
 

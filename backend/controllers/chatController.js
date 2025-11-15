@@ -1,8 +1,15 @@
-const db = require("../utils/db");
+const getDb = require("../utils/db");
 
 exports.saveMessage = async (req, res) => {
   try {
     const { roomId, senderId, message } = req.body;
+
+    const db = await getDb();
+    
+    // Initialize messages array if it doesn't exist
+    if (!db.data.messages) {
+      db.data.messages = [];
+    }
 
     const newMsg = {
       id: Date.now().toString(),
@@ -25,6 +32,13 @@ exports.saveMessage = async (req, res) => {
 exports.getMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
+
+    const db = await getDb();
+    
+    // Initialize messages array if it doesn't exist
+    if (!db.data.messages) {
+      db.data.messages = [];
+    }
 
     const msgs = db.data.messages.filter(m => m.roomId === roomId);
 

@@ -15,22 +15,40 @@ const app = express();
 
 app.use(express.json());
 
-// GLOBAL CORS CONFIG
+// GLOBAL CORS CONFIG - Allow multiple localhost ports for development
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002"
+];
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Allow all origins in development (change in production)
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-user-id"],
   })
 );
 
 // SAFEST EXPRESS 5 PREFLIGHT HANDLER
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin) || !origin) {
+      res.header("Access-Control-Allow-Origin", origin || "*");
+    }
     res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, x-user-id");
+    res.header("Access-Control-Allow-Credentials", "true");
     return res.sendStatus(200);
   }
   next();
