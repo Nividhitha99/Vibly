@@ -3,23 +3,22 @@ const http = require("http");
 const socketio = require("socket.io");
 const app = require("./app");
 
-// Handle unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  // Don't exit the process, just log the error
+  console.error("Unhandled Rejection:", reason);
 });
 
-// Handle uncaught exceptions
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
-  // Don't exit the process, just log the error
 });
 
 const server = http.createServer(app);
+
 const io = socketio(server, {
   cors: {
-    origin: "*",
-  }
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
 });
 
 io.on("connection", (socket) => {
@@ -38,10 +37,11 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
-  console.log("API endpoints available at http://localhost:5000/api");
-  console.log("Health check: http://localhost:5000/health");
+// Listen on all interfaces
+server.listen(5001, () => {
+  console.log("Server running on port 5001");
+  console.log("API endpoints: http://localhost:5001/api");
+  console.log("Health check:  http://localhost:5001/health");
 });
 
 module.exports = io;
