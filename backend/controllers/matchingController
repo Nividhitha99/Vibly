@@ -11,7 +11,11 @@ exports.getMatches = async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Match error:", error);
-    res.status(500).json({ error: "Failed to fetch matches" });
+    console.error("Match error:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      error: "Failed to fetch matches",
+      details: error.message 
+    });
   }
 };

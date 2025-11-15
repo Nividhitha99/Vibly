@@ -12,26 +12,23 @@ export default function Signup() {
     e.preventDefault();
 
     try {
-      // TEMP — backend does not have register endpoint yet
-      // so save to localStorage to continue developing
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ name, email, password })
-      );
-
-      // When backend adds /register uncomment:
-      /*
-      await axios.post("http://localhost:5000/api/auth/register", {
+      // Call the backend register endpoint
+      const res = await axios.post("http://localhost:5000/api/user/register", {
         name,
         email,
         password,
       });
-      */
+
+      // Save userId to localStorage for future use
+      if (res.data.userId) {
+        localStorage.setItem("userId", res.data.userId);
+      }
 
       navigate("/preferences");
     } catch (err) {
       console.error(err);
-      alert("Signup failed");
+      const errorMessage = err.response?.data?.error || "Signup failed";
+      alert(errorMessage);
     }
   };
 

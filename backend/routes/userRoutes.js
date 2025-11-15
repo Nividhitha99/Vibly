@@ -38,6 +38,13 @@ router.get("/login", (req, res) => {
   });
 });
 
+// Preferences - redirect to taste controller
+router.post("/preferences", (req, res, next) => {
+  console.log("Preferences route hit! (POST)");
+  const tasteController = require("../controllers/tasteController");
+  tasteController.savePreferences(req, res, next);
+});
+
 // Get user by ID - must be LAST because it matches any GET /:id
 router.get("/:id", (req, res, next) => {
   // Don't match "register" or "login" as IDs

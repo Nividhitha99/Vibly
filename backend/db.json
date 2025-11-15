@@ -1,7 +1,77 @@
 {
-  "users": [],
-  "tastes": [],
+  "users": [
+    {
+      "id": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "name": "Nivi",
+      "email": "nivedu99@gmail.com",
+      "password": "$2b$10$rnqA8/B/yCIHkqW/q7a/keCKnfMTdmxOIpUQ9gBHj44YYEC5Yw..q"
+    },
+    {
+      "id": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "name": "Reetu",
+      "email": "reetu@gmail.com",
+      "password": "$2b$10$Z0PyrxJavIzokPxLFWclT./VXqk5biAQoWvYX/vr4vEvgs17Ry7MG"
+    },
+    {
+      "id": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "name": "test1",
+      "email": "test1@gmail.com",
+      "password": "$2b$10$4M1YZ2Ydvr4Fiq3uzZsz5uTAnuPTI6GA/NSnCiphxF5awrhvEJtG6"
+    }
+  ],
+  "tastes": [
+    {
+      "userId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "movies": [
+        "dude"
+      ],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
+    },
+    {
+      "userId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "movies": [
+        "talk to me"
+      ],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
+    },
+    {
+      "userId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "movies": [
+        "ghost"
+      ],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
+    }
+  ],
   "embeddings": [],
   "matches": []
 }
-

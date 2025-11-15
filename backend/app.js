@@ -7,7 +7,10 @@ const app = express();
 
 // Middleware - must be before routes
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 
 // Request logger - see all incoming requests
 app.use((req, res, next) => {

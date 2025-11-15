@@ -10,17 +10,27 @@ function Preferences() {
 
   const handleSubmit = async () => {
     try {
+      const userId = localStorage.getItem("userId");
+      
+      if (!userId) {
+        alert("Please login first");
+        window.location.href = "/login";
+        return;
+      }
+
       await axios.post("http://localhost:5000/api/user/preferences", {
+        userId,
         movies,
-        tv,
+        shows: tv, // Map tv to shows for backend
         music,
       });
 
       alert("Preferences saved!");
-      window.location.href = "/matchlist";
+      window.location.href = "/match-list";
     } catch (err) {
       console.error(err);
-      alert("Error saving preferences");
+      const errorMessage = err.response?.data?.error || "Error saving preferences";
+      alert(errorMessage);
     }
   };
 
