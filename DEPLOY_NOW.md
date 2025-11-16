@@ -49,20 +49,27 @@ git push origin main
 
 ---
 
-### 4. Upload Database (2 min)
+### 4. Upload Database (2 min) ⚠️ CRITICAL STEP
 
-**Easiest method:**
+**Method 1: Via Render Shell (Recommended)**
 
 1. Go to backend service → **Shell** tab
 2. Click **Open Shell**
-3. Upload `backend/db.json` via the upload button
-4. Or temporarily commit to GitHub:
-   ```bash
-   git add backend/db.json
-   git commit -m "Add db for deployment"
-   git push
-   # After deploy, remove: git rm --cached backend/db.json
-   ```
+3. Click **Upload** button in the shell
+4. Select your local `backend/db.json` file
+5. Verify: `ls -la db.json` (should show file size)
+6. Service will auto-restart
+
+**Method 2: Via GitHub (Temporary)**
+
+```bash
+git add backend/db.json
+git commit -m "Add db for deployment"
+git push
+# After deploy, remove: git rm --cached backend/db.json && git push
+```
+
+**⚠️ Without db.json, login won't work!**
 
 ---
 
