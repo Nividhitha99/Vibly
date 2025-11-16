@@ -96,23 +96,34 @@ function JamSession() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col">
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">🎵 Jam Session</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white flex flex-col">
+      <div className="p-4 border-b border-white/20 bg-white/5 backdrop-blur-sm flex items-center justify-between">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+          <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
+          Jam Session
+        </h1>
         <button
           onClick={() => navigate(-1)}
-          className="text-gray-400 hover:text-white"
+          className="text-white/80 hover:text-white flex items-center gap-2 transition-colors duration-200 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/20 hover:bg-white/20"
         >
-          ← Back
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Back</span>
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-400 mt-8">
-            <p className="text-lg">No messages yet. Start the conversation!</p>
+          <div className="text-center text-white/60 mt-8">
+            <svg className="w-20 h-20 mx-auto mb-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+            <p className="text-lg text-white/80">No messages yet. Start the conversation!</p>
             {initialMessage && (
-              <p className="mt-2 text-sm">Suggested: "{initialMessage}"</p>
+              <p className="mt-2 text-sm text-white/60">Suggested: "{initialMessage}"</p>
             )}
           </div>
         ) : (
@@ -124,15 +135,15 @@ function JamSession() {
                 className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl backdrop-blur-sm ${
                     isOwn
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-100"
+                      ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+                      : "bg-white/10 text-white border border-white/20"
                   }`}
                 >
-                  <p>{msg.message}</p>
-                  <p className="text-xs mt-1 opacity-70">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
+                  <p className="text-white">{msg.message}</p>
+                  <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-white/50'}`}>
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
@@ -142,7 +153,7 @@ function JamSession() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-white/20 bg-white/5 backdrop-blur-sm">
         <div className="flex gap-2">
           <input
             type="text"
@@ -150,13 +161,16 @@ function JamSession() {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 px-4 py-3 rounded-xl border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all duration-300"
           />
           <button
             onClick={sendMessage}
-            className="bg-blue-600 px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2"
           >
-            Send
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            <span>Send</span>
           </button>
         </div>
       </div>
@@ -165,4 +179,3 @@ function JamSession() {
 }
 
 export default JamSession;
-
