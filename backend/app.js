@@ -81,6 +81,7 @@ app.use("/api/ai-chat", require("./routes/chatAIroutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/follow", require("./routes/followRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/watch-party", require("./routes/watchPartyRoutes"));
 app.use("/api/jam", require("./routes/jamRoutes"));
 
 // HEALTH CHECK

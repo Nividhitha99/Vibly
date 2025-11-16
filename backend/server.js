@@ -33,11 +33,19 @@ io.on("connection", (socket) => {
   socket.on("registerUser", (userId) => {
     userSockets.set(userId, socket.id);
     socket.userId = userId;
-    console.log(`User ${userId} registered with socket ${socket.id}`);
+    console.log(`✅ User ${userId} registered with socket ${socket.id}`);
+    console.log(`📊 Total registered users: ${userSockets.size}`, Array.from(userSockets.keys()));
   });
 
   socket.on("sendMessage", async (data) => {
     const roomId = data.room || data.roomId;
+    if (roomId) {
+      console.log(`Broadcasting message to room ${roomId}:`, data.message);
+      // Broadcast to all users in the room (including sender for confirmation)
+      io.to(roomId).emit("receiveMessage", data);
+      console.log(`Message broadcasted to room ${roomId}`);
+    } else {
+      console.warn("sendMessage received without roomId:", data);
     if (!roomId) {
       console.error("[BACKEND] No room ID provided in sendMessage");
       return;
@@ -70,6 +78,17 @@ io.on("connection", (socket) => {
 
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room: ${roomId}`);
+  });
+
+  // Handle content selection for watch party
+  socket.on("contentSelected", (data) => {
+    const roomId = data.roomId;
+    if (roomId) {
+      // Broadcast to all users in the room (except sender)
+      socket.to(roomId).emit("contentSelected", data);
+      console.log(`Content selected in room ${roomId}:`, data.content?.title || data.content?.name);
+    }
   });
 
   // Jam Session Events
@@ -201,7 +220,16 @@ io.on("connection", (socket) => {
 io.emitToUser = (userId, event, data) => {
   const socketId = userSockets.get(userId);
   if (socketId) {
+    console.log(`📤 Emitting ${event} to user ${userId} (socket ${socketId})`);
+    console.log(`📋 Event data:`, JSON.stringify(data, null, 2));
     io.to(socketId).emit(event, data);
+    console.log(`✅ Event ${event} emitted successfully to ${userId}`);
+  } else {
+    console.warn(`⚠️ User ${userId} not registered with socket.`);
+    console.log(`📊 Available registered users:`, Array.from(userSockets.keys()));
+    console.log(`💾 Notification saved in DB - user will see it when they check notifications`);
+    // If user is not registered, the notification will still be saved in DB
+    // and will be shown when they check notifications
   }
 };
 
