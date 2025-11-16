@@ -208,6 +208,12 @@
       "city": "Frankfurt",
       "gender": "female",
       "lookingFor": "male"
+    },
+    {
+      "id": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
+      "name": "Azru Pola",
+      "email": "azru@example.com",
+      "password": "$2b$10$SSgtjIt9rOZoqYNoHbto4OsQHiEPIVhhlYQXBrLphXqLlvTet.6sK"
     }
   ],
   "tastes": [

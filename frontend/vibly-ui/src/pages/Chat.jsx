@@ -160,49 +160,65 @@ function Chat() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] text-white flex items-center justify-center">
-        <div className="text-xl">Loading conversations...</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-white text-xl">Loading conversations...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex">
       {/* Conversations Sidebar */}
-      <div className="w-80 border-r border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-700">
-          <h1 className="text-2xl font-bold">💬 Messages</h1>
+      <div className="w-80 bg-white/5 backdrop-blur-xl border-r border-white/20 flex flex-col">
+        <div className="p-4 border-b border-white/20 bg-white/5">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+            <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Messages
+          </h1>
         </div>
         
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">
-              <p>No conversations yet.</p>
-              <p className="text-sm mt-2">Start chatting with your matches!</p>
+            <div className="p-4 text-center text-white/60">
+              <svg className="w-16 h-16 mx-auto mb-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p className="text-white/80">No conversations yet.</p>
+              <p className="text-sm mt-2 text-white/60">Start chatting with your matches!</p>
             </div>
           ) : (
             conversations.map((conv) => (
               <div
                 key={conv.userId}
                 onClick={() => setSelectedConversation(conv)}
-                className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 transition ${
-                  selectedConversation?.userId === conv.userId ? "bg-gray-800" : ""
+                className={`p-4 border-b border-white/10 cursor-pointer transition-all duration-300 ${
+                  selectedConversation?.userId === conv.userId 
+                    ? "bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border-l-4 border-purple-400" 
+                    : "hover:bg-white/5"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xl font-bold text-white shadow-lg">
                     {conv.name?.charAt(0).toUpperCase() || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold truncate">{conv.name}</div>
+                    <div className="font-semibold truncate text-white">{conv.name}</div>
                     {conv.lastMessage && (
-                      <div className="text-sm text-gray-400 truncate">
+                      <div className="text-sm text-white/60 truncate">
                         {conv.lastMessage}
                       </div>
                     )}
                   </div>
                   {conv.lastMessageTime && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-white/50">
                       {formatTime(conv.lastMessageTime)}
                     </div>
                   )}
@@ -214,27 +230,30 @@ function Chat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-white/5 backdrop-blur-sm">
         {selectedConversation ? (
           <>
-            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+            <div className="p-4 border-b border-white/20 bg-white/5 backdrop-blur-sm flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-lg font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold text-white shadow-lg">
                   {selectedConversation.name?.charAt(0).toUpperCase() || "?"}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{selectedConversation.name}</h2>
-                  <p className="text-sm text-gray-400">{selectedConversation.email}</p>
+                  <h2 className="text-xl font-bold text-white">{selectedConversation.name}</h2>
+                  <p className="text-sm text-white/60">{selectedConversation.email}</p>
                 </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 ? (
-                <div className="text-center text-gray-400 mt-8">
-                  <p className="text-lg">No messages yet. Start the conversation!</p>
+                <div className="text-center text-white/60 mt-8">
+                  <svg className="w-20 h-20 mx-auto mb-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <p className="text-lg text-white/80">No messages yet. Start the conversation!</p>
                   {initialMessage && (
-                    <p className="mt-2 text-sm">Suggested: "{initialMessage}"</p>
+                    <p className="mt-2 text-sm text-white/60">Suggested: "{initialMessage}"</p>
                   )}
                 </div>
               ) : (
@@ -246,15 +265,15 @@ function Chat() {
                       className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl backdrop-blur-sm ${
                           isOwn
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 text-gray-100"
+                            ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+                            : "bg-white/10 text-white border border-white/20"
                         }`}
                       >
-                        <p>{msg.message}</p>
-                        <p className="text-xs mt-1 opacity-70">
-                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        <p className="text-white">{msg.message}</p>
+                        <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-white/50'}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>
@@ -264,7 +283,7 @@ function Chat() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 border-t border-gray-700">
+            <div className="p-4 border-t border-white/20 bg-white/5 backdrop-blur-sm">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -272,22 +291,27 @@ function Chat() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type a message..."
-                  className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 px-4 py-3 rounded-xl border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all duration-300"
                 />
                 <button
                   onClick={sendMessage}
-                  className="bg-blue-600 px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center gap-2"
                 >
-                  Send
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <span>Send</span>
                 </button>
               </div>
             </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-6xl mb-4">💬</div>
-              <p className="text-xl">Select a conversation to start chatting</p>
+            <div className="text-center text-white/60">
+              <svg className="w-24 h-24 mx-auto mb-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p className="text-xl text-white/80">Select a conversation to start chatting</p>
             </div>
           </div>
         )}
