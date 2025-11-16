@@ -11677,6 +11677,18 @@
       },
       "read": false,
       "createdAt": 1763254510594
+    },
+    {
+      "id": "1763254779012035s45s8b",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": false,
+      "createdAt": 1763254779012
     }
   ],
   "messages": [
