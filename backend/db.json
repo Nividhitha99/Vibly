@@ -11241,10 +11241,7 @@
       "status": "confirmed"
     },
     {
-<<<<<<< HEAD
       "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
-=======
-      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
       "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "status": "pending"
     },
@@ -11310,7 +11307,6 @@
     },
     {
       "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
->>>>>>> def01e834e4f4136347a05f97d533eade3f67bed
       "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "status": "pending"
     }
@@ -11425,7 +11421,6 @@
       "createdAt": 1763247002612
     },
     {
-<<<<<<< HEAD
       "id": "1763254039776mmu07enpz",
       "userId": "0a0de768-164b-4669-9846-c98502190214",
       "type": "like",
@@ -11433,7 +11428,8 @@
       "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
       "read": false,
       "createdAt": 1763254039776
-=======
+    },
+    {
       "id": "17632494154310xntnqcnn",
       "userId": "0a0de768-164b-4669-9846-c98502190214",
       "type": "like",
@@ -11531,7 +11527,6 @@
       "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
       "read": false,
       "createdAt": 1763253617245
->>>>>>> def01e834e4f4136347a05f97d533eade3f67bed
     }
   ],
   "messages": [
@@ -11569,6 +11564,13 @@
       "senderId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
       "message": "heyyy",
       "timestamp": 1763253570578
+    },
+    {
+      "id": "1763254595337",
+      "roomId": "2bc81148-17cc-45cf-87c4-be9b55d8810a-chat85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "senderId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "message": "hola",
+      "timestamp": 1763254595337
     }
   ],
   "passes": [
