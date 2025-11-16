@@ -25,6 +25,37 @@ exports.getMatches = async (userId) => {
 
   console.log(`[Matching] Current user has embedding and taste data. Finding matches...`);
 
+  // Get users that current user has already liked or passed
+  const likedUserIds = new Set();
+  const passedUserIds = new Set();
+  const matchedUserIds = new Set();
+  
+  if (db.data.matches) {
+    db.data.matches.forEach(m => {
+      if (m.fromUser === userId) {
+        if (m.status === "confirmed") {
+          matchedUserIds.add(m.toUser);
+        } else {
+          likedUserIds.add(m.toUser); // pending likes
+        }
+      }
+      // Also check if they liked us and we matched
+      if (m.toUser === userId && m.status === "confirmed") {
+        matchedUserIds.add(m.fromUser);
+      }
+    });
+  }
+  
+  if (db.data.passes) {
+    db.data.passes.forEach(p => {
+      if (p.fromUser === userId) {
+        passedUserIds.add(p.toUser);
+      }
+    });
+  }
+  
+  console.log(`[Matching] Excluding ${likedUserIds.size} liked users, ${passedUserIds.size} passed users, ${matchedUserIds.size} matched users`);
+
   const results = [];
 
   console.log(`[Matching] Checking ${allEmbeddings.length} embeddings for matches...`);
@@ -53,6 +84,20 @@ exports.getMatches = async (userId) => {
       continue;
     }
     
+    // Skip users that have already been liked, passed, or matched
+    if (likedUserIds.has(other.userId)) {
+      console.log(`[Matching] Skipping ${other.userId} - already liked`);
+      continue;
+    }
+    if (passedUserIds.has(other.userId)) {
+      console.log(`[Matching] Skipping ${other.userId} - already passed`);
+      continue;
+    }
+    if (matchedUserIds.has(other.userId)) {
+      console.log(`[Matching] Skipping ${other.userId} - already matched`);
+      continue;
+    }
+    
     // Skip if other embedding doesn't have a vector
     if (!other.vector || !Array.isArray(other.vector)) {
       console.log(`[Matching] Skipping ${other.userId} - no valid vector`);
@@ -72,7 +117,14 @@ exports.getMatches = async (userId) => {
       continue;
     }
     
-    console.log(`[Matching] Processing match with ${otherUser.name} (${other.userId})`);
+    // CRITICAL: Verify userId consistency - embedding userId must match user id
+    if (other.userId !== otherUser.id) {
+      console.error(`[Matching] ERROR: userId mismatch! Embedding userId: ${other.userId}, User id: ${otherUser.id}, User name: ${otherUser.name}`);
+      console.error(`[Matching] This will cause data mismatch - skipping this match`);
+      continue; // Skip this match to prevent showing wrong user's data
+    }
+    
+    console.log(`[Matching] Processing match with ${otherUser.name} (userId: ${other.userId}, user.id: ${otherUser.id}) - VERIFIED CONSISTENT`);
 
     // -----------------------------------
     // GENDER FILTER (More lenient - only filter if both users have strict preferences)
@@ -497,14 +549,21 @@ exports.getMatches = async (userId) => {
     // Negative cosine similarity means opposite preferences
     if (score > -0.1) { // Allow slightly negative scores but filter out very negative ones
       console.log(`[Matching] Adding match: ${otherUser.name} with score ${score.toFixed(4)}`);
+      // At this point, we've already verified userId === otherUser.id above
+      // Use otherUser.id to ensure consistency (in case of any edge cases)
+      const matchUserId = otherUser.id; // Use user.id as the source of truth
+      
       results.push({
-        userId: other.userId,
-        name: otherUser?.name,
-        email: otherUser?.email,
-        profileImages: otherUser?.profileImages || null,
-        imageUrl: otherUser?.imageUrl || null, // Keep for backward compatibility
+        userId: matchUserId, // Use user.id to ensure consistency
+        name: otherUser.name || 'Unknown',
+        email: otherUser.email || '',
+        profileImages: otherUser.profileImages || null,
+        imageUrl: otherUser.imageUrl || null, // Keep for backward compatibility
         score: Math.max(0, score) // Ensure score is at least 0 for display
       });
+      
+      // Log to verify data consistency
+      console.log(`[Matching] ✅ Added match: ${otherUser.name} (userId: ${matchUserId}, email: ${otherUser.email}) - ALL DATA VERIFIED`);
     } else {
       console.log(`[Matching] Skipping ${otherUser.name} - score too low: ${score.toFixed(4)}`);
     }
@@ -544,7 +603,7 @@ exports.getMatches = async (userId) => {
     if (seenUserIds.has(normalizedUserId)) {
       const existing = uniqueMap.get(normalizedUserId);
       if (existing && match.score > existing.score) {
-        console.log(`[Matching] Replacing duplicate ${normalizedUserId} with higher score: ${match.score.toFixed(4)} > ${existing.score.toFixed(4)}`);
+        console.log(`[Matching] Replacing duplicate ${normalizedUserId} (${match.name}) with higher score: ${match.score.toFixed(4)} > ${existing.score.toFixed(4)}`);
         uniqueMap.set(normalizedUserId, match);
       } else {
         console.log(`[Matching] Skipping duplicate ${normalizedUserId} (${match.name || 'Unknown'}) - lower or equal score`);
@@ -557,7 +616,7 @@ exports.getMatches = async (userId) => {
   
   const uniqueResults = Array.from(uniqueMap.values());
   
-  // Final safety check - filter by userId one more time
+  // Final safety check - filter by userId one more time (CRITICAL - ensure no duplicates)
   const finalResults = [];
   const finalSeen = new Set();
   for (const match of uniqueResults) {
@@ -566,8 +625,27 @@ exports.getMatches = async (userId) => {
       finalSeen.add(id);
       finalResults.push(match);
     } else {
-      console.log(`[Matching] Final filter: Removing duplicate ${id} (${match.name || 'Unknown'})`);
+      console.error(`[Matching] ❌ CRITICAL: Final filter removing duplicate ${id} (${match.name || 'Unknown'}) - this should not happen!`);
     }
+  }
+  
+  // EXTRA VERIFICATION: Check for any remaining duplicates
+  const finalUserIds = finalResults.map(m => String(m.userId).trim());
+  const duplicateCheck = finalUserIds.filter((id, index) => finalUserIds.indexOf(id) !== index);
+  if (duplicateCheck.length > 0) {
+    console.error(`[Matching] ❌ CRITICAL ERROR: Found ${duplicateCheck.length} duplicate userIds in final results:`, duplicateCheck);
+    // Remove duplicates - keep only the first occurrence
+    const trulyUnique = [];
+    const trulySeen = new Set();
+    for (const match of finalResults) {
+      const id = String(match.userId).trim();
+      if (!trulySeen.has(id)) {
+        trulySeen.add(id);
+        trulyUnique.push(match);
+      }
+    }
+    console.error(`[Matching] Removed ${finalResults.length - trulyUnique.length} additional duplicates`);
+    return trulyUnique;
   }
   
   // Ensure final results are sorted high to low
