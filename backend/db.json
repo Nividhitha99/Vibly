@@ -241,6 +241,43 @@
         "https://api.dicebear.com/7.x/avataaars/svg?seed=68ff81db-99ed-41b5-9521-150158fa718d&gender=male&style=circle",
         "https://api.dicebear.com/7.x/avataaars/svg?seed=68ff81db-99ed-41b5-9521-150158fa718d-2&gender=male&style=circle"
       ]
+    },
+    {
+      "id": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "name": "test6",
+      "email": "test6@gmail.com",
+      "password": "$2b$10$Ojoj22Bc4jaAJCHYXK9BleiU0AWl5Gx48AMIaKcwXsWrjmJiNCZ1S",
+      "age": 26,
+      "gender": "",
+      "physically": 50,
+      "sexually": 50,
+      "emotionally": 50,
+      "birthday": "1999-10-10",
+      "location": "MD",
+      "city": "College Park",
+      "profileImages": [
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=f8f80b9b-be3e-4ee9-96bd-4e86f96359b8&style=circle",
+        "https://api.dicebear.com/7.x/avataaars/svg?seed=f8f80b9b-be3e-4ee9-96bd-4e86f96359b8-2&style=circle"
+      ],
+      "sexualityScore": 50,
+      "sexualityLabel": "Bisexual/Pansexual (Mid-spectrum)",
+      "sexualityCompatibilityFactors": {
+        "preferredPhysicalRange": [
+          30,
+          70
+        ],
+        "preferredSexualRange": [
+          30,
+          70
+        ],
+        "preferredEmotionalRange": [
+          30,
+          70
+        ]
+      },
+      "ageRangeMin": 18,
+      "ageRangeMax": 45,
+      "maxDistance": 30
     }
   ],
   "tastes": [
@@ -1134,6 +1171,21 @@
       "preferredLanguages": [
         "en"
       ]
+    },
+    {
+      "userId": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "movies": [],
+      "music": [],
+      "shows": [],
+      "weights": {
+        "movies": 0.4,
+        "music": 0.4,
+        "shows": 0.2
+      },
+      "region": "Unknown",
+      "regionPreference": "any",
+      "languages": [],
+      "preferredLanguages": []
     }
   ],
   "embeddings": [
@@ -11584,6 +11636,26 @@
       "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
       "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "status": "pending"
+    },
+    {
+      "fromUser": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "toUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "status": "pending"
+    },
+    {
+      "fromUser": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "toUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "status": "pending"
+    },
+    {
+      "fromUser": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "toUser": "7cfc2bc4-2213-4a9f-8c29-5499f26803da",
+      "status": "pending"
     }
   ],
   "notifications": [
@@ -12275,6 +12347,85 @@
       "data": null,
       "read": false,
       "createdAt": 1763273930052
+    },
+    {
+      "id": "1763276081022u76e5chyk",
+      "userId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "type": "jam-invite",
+      "message": "Nivi invited you to a jam session!",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "actionUrl": {
+        "roomId": "jam-2bc81148-17cc-45cf-87c4-be9b55d8810a-85b5e57c-5e36-42ca-a61d-74fcb93832d1"
+      },
+      "data": null,
+      "read": false,
+      "createdAt": 1763276081022
+    },
+    {
+      "id": "176327628563024pscdm4g",
+      "userId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "type": "watchParty",
+      "message": "Nivi wants to start a watch party with you! Please join the link.",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "actionUrl": "/watch-party?matchId=2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "data": null,
+      "read": false,
+      "createdAt": 1763276285630
+    },
+    {
+      "id": "1763276285644yofpyt8v7",
+      "userId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "type": "watchParty",
+      "message": "Nivi wants to start a watch party with you! Please join the link.",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "actionUrl": "/watch-party?matchId=2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "data": null,
+      "read": false,
+      "createdAt": 1763276285644
+    },
+    {
+      "id": "17632767001606cnjgcxkv",
+      "userId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "type": "like",
+      "message": "test6 wants to connect with you!",
+      "relatedUserId": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763276700160
+    },
+    {
+      "id": "1763276703055lhc0xfla6",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "test6 wants to connect with you!",
+      "relatedUserId": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763276703055
+    },
+    {
+      "id": "1763276705588j9o8x6xb1",
+      "userId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "type": "like",
+      "message": "test6 wants to connect with you!",
+      "relatedUserId": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763276705588
+    },
+    {
+      "id": "17632767081739at9y229s",
+      "userId": "7cfc2bc4-2213-4a9f-8c29-5499f26803da",
+      "type": "like",
+      "message": "test6 wants to connect with you!",
+      "relatedUserId": "f8f80b9b-be3e-4ee9-96bd-4e86f96359b8",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763276708173
     }
   ],
   "messages": [

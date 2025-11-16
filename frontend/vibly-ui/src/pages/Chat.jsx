@@ -104,43 +104,6 @@ function Chat() {
     loadConversations();
   }, [userId, navigate, matchId]);
 
-  // Fetch conversation starters for new chats
-  const fetchConversationStarters = React.useCallback(async () => {
-    if (!selectedConversation || !userId) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setConversationStarters(res.data.starters || []);
-    } catch (err) {
-      console.error("Error fetching conversation starters:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
-
-  // Analyze chat and get AI suggestions
-  const analyzeChat = React.useCallback(async (msgs) => {
-    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
-        messages: msgs,
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setAiSuggestions(res.data.analysis);
-    } catch (err) {
-      console.error("Error analyzing chat:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
-
   // Set up socket and load messages when conversation is selected
   useEffect(() => {
     if (!selectedConversation || !userId) return;
