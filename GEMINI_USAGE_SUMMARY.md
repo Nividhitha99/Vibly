@@ -1,7 +1,7 @@
 # Gemini API Usage Summary
 
 ## Overview
-Gemini API (Google Generative AI) is being used extensively throughout the Vibly backend. Here's a comprehensive breakdown of all usage locations:
+Gemini API (Google Generative AI) is being used extensively throughout the Vibely backend. Here's a comprehensive breakdown of all usage locations:
 
 ## Configuration
 - **API Key**: Set in `backend/app.js` (line 5)

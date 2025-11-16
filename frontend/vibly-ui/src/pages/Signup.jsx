@@ -124,7 +124,7 @@ export default function Signup() {
         <div className="text-center mb-6 sm:mb-8">
           <Link to="/" className="inline-block transform hover:scale-105 transition-transform duration-300">
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold mb-2 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
-              Vibly
+              Vibely
             </h1>
           </Link>
           <p className="text-lg sm:text-xl text-purple-200 font-light">Create Your Account</p>

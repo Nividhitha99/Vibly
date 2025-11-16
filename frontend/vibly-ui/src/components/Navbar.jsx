@@ -87,7 +87,7 @@ function Navbar() {
             className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent hover:scale-110 transition-all duration-300 drop-shadow-lg"
             style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', letterSpacing: '-0.02em' }}
           >
-            Vibly
+            Vibely
           </Link>
           
           {/* Navigation Links */}

@@ -11234,6 +11234,11 @@
       "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
       "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "status": "confirmed"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
     }
   ],
   "notifications": [
@@ -11326,6 +11331,15 @@
       "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
       "read": false,
       "createdAt": 1763247002612
+    },
+    {
+      "id": "1763254039776mmu07enpz",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763254039776
     }
   ],
   "messages": [

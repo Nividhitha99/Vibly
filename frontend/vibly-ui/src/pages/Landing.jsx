@@ -71,7 +71,7 @@ function Landing() {
         <div className="text-center mb-16 animate-fadeInUp">
           <div className="relative inline-block">
             <h1 className="text-8xl md:text-9xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient relative z-10">
-              Vibly
+              Vibely
             </h1>
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 blur-2xl opacity-30 animate-pulse"></div>
