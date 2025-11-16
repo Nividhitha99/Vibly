@@ -814,12 +814,12 @@ export default function JamSession() {
                   className={`w-3 h-3 rounded-full ${
                     isConnected ? "bg-green-500" : "bg-red-500"
                   }`}
-                ></div>
+                />
                 <span className="text-sm text-gray-400">
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
-              {participants >= 2 && (
+              {matches.length > 0 && (
                 <button
                   onClick={() => setShowInviteModal(true)}
                   className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm font-semibold"

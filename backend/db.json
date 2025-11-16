@@ -214,6 +214,12 @@
       "name": "subi",
       "email": "subi@gmail.com",
       "password": "$2b$10$fLHCLe1VRMzbcyJmwHHJf.pVtYhnmhuDWVMQElcxMKewiqY1q9lee"
+    },
+    {
+      "id": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
+      "name": "Azru Pola",
+      "email": "azru@example.com",
+      "password": "$2b$10$SSgtjIt9rOZoqYNoHbto4OsQHiEPIVhhlYQXBrLphXqLlvTet.6sK"
     }
   ],
   "tastes": [
@@ -11296,7 +11302,7 @@
     {
       "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
       "toUser": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
-      "status": "pending"
+      "status": "confirmed"
     },
     {
       "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
@@ -11307,6 +11313,11 @@
       "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
       "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "status": "confirmed"
     },
     {
       "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
@@ -11319,9 +11330,69 @@
       "status": "pending"
     },
     {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "pending"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
       "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
       "status": "pending"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "toUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "status": "confirmed"
     },
     {
       "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
@@ -11356,6 +11427,36 @@
     {
       "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "toUser": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "toUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
+    },
+    {
+      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "status": "pending"
     }
   ],
@@ -11375,7 +11476,7 @@
       "type": "like",
       "message": "Nivi wants to connect with you!",
       "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": false,
+      "read": true,
       "createdAt": 1763242971406
     },
     {
@@ -11420,6 +11521,25 @@
     },
     {
       "id": "17632479752205oz93lkq9",
+      "id": "1763248194706aygl5xe8j",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763248194706
+    },
+    {
+      "id": "1763248199696zqv9lthkw",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": true,
+      "createdAt": 1763248199696
+    },
+    {
+      "id": "1763246370952kz1zcinn9",
       "userId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
       "type": "like",
       "message": "Taylor wants to connect with you!",
@@ -11430,6 +11550,119 @@
     },
     {
       "id": "1763248006905gtcrmbfmu",
+      "read": true,
+      "createdAt": 1763246370952
+    },
+    {
+      "id": "1763246459438c1oowf5hi",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763246459438
+    },
+    {
+      "id": "1763246475178lbppo4154",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763246475178
+    },
+    {
+      "id": "1763246516633qdx1h5zz8",
+      "userId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "read": true,
+      "createdAt": 1763246516633
+    },
+    {
+      "id": "1763246733798r8x3iw4fw",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763246733798
+    },
+    {
+      "id": "1763246997942krzz39dna",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763246997942
+    },
+    {
+      "id": "1763247002612zk0r5od9k",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763247002612
+    },
+    {
+      "id": "1763254039776mmu07enpz",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Jordan wants to connect with you!",
+      "relatedUserId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "read": false,
+      "createdAt": 1763254039776
+    },
+    {
+      "id": "17632494154310xntnqcnn",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763249415431
+    },
+    {
+      "id": "1763249710139heqwdrbdv",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763249710139
+    },
+    {
+      "id": "17632515204712jp8ggqt2",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763251520471
+    },
+    {
+      "id": "17632517956513cdt3axcf",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763251795651
+    },
+    {
+      "id": "1763251832003r8nye8csy",
+      "userId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "type": "like",
+      "message": "Sam wants to connect with you!",
+      "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "read": false,
+      "createdAt": 1763251832003
+    },
+    {
+      "id": "1763252572393c2a8g2skh",
       "userId": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
       "type": "like",
       "message": "Taylor wants to connect with you!",
@@ -11440,6 +11673,11 @@
     },
     {
       "id": "1763248010981uq5j1xpgs",
+      "read": false,
+      "createdAt": 1763252572394
+    },
+    {
+      "id": "1763252578683l9zoj2a3s",
       "userId": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
       "type": "like",
       "message": "Taylor wants to connect with you!",
@@ -11450,6 +11688,11 @@
     },
     {
       "id": "1763248022542v88r067ic",
+      "read": false,
+      "createdAt": 1763252578683
+    },
+    {
+      "id": "17632525818260fnizs5w1",
       "userId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
       "type": "like",
       "message": "Taylor wants to connect with you!",
@@ -11689,6 +11932,45 @@
       },
       "read": false,
       "createdAt": 1763254779012
+    },
+    {
+      "id": "1763252581826duplicate",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "You have been invited to a jam session",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763252581826
+    },
+    {
+      "id": "176325360163819ppsednb",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Nivi wants to connect with you!",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "read": false,
+      "createdAt": 1763253601638
+    },
+    {
+      "id": "1763253614527wwgc9ihmy",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Nivi wants to connect with you!",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "read": false,
+      "createdAt": 1763253614527
+    },
+    {
+      "id": "17632536172458je4rjkyp",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Nivi wants to connect with you!",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "read": false,
+      "createdAt": 1763253617245
     }
   ],
   "messages": [
@@ -11817,6 +12099,65 @@
       "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "message": "hello",
       "timestamp": 1763253890297
+    },
+    {
+      "id": "1763247492212",
+      "roomId": "e14d1480-aea9-4174-85d3-baf73992c2b6-chatff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "senderId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "message": "Hi anna namaskara",
+      "timestamp": 1763247492212
+    },
+    {
+      "id": "1763249268635",
+      "roomId": "e14d1480-aea9-4174-85d3-baf73992c2b6-chatff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "senderId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "message": "wassup bro",
+      "timestamp": 1763249268635
+    },
+    {
+      "id": "1763252966665",
+      "roomId": "e14d1480-aea9-4174-85d3-baf73992c2b6-chatff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "heyy",
+      "timestamp": 1763252966665
+    },
+    {
+      "id": "1763253394083",
+      "roomId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3-chatff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "senderId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "message": "hii",
+      "timestamp": 1763253394083
+    },
+    {
+      "id": "1763253570578",
+      "roomId": "2bc81148-17cc-45cf-87c4-be9b55d8810a-chat85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "senderId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "message": "heyyy",
+      "timestamp": 1763253570578
+    },
+    {
+      "id": "1763254595337",
+      "roomId": "2bc81148-17cc-45cf-87c4-be9b55d8810a-chat85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "senderId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "message": "hola",
+      "timestamp": 1763254595337
+    }
+  ],
+  "passes": [
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "e738f934-26fe-46fe-a45c-2721bc5739ec",
+      "passedAt": 1763252586564
+    },
+    {
+      "fromUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "passedAt": 1763253016179
+    },
+    {
+      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "passedAt": 1763253619044
     }
   ]
 }

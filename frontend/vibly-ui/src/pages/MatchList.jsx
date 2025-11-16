@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import TinderCard from "../components/TinderCard";
+import GeminiLoading from "../components/GeminiLoading";
 
 function MatchList() {
   const navigate = useNavigate();
@@ -17,9 +18,25 @@ function MatchList() {
   
   // Filter states
   const [showFilters, setShowFilters] = useState(true);
-  const [filterByAge, setFilterByAge] = useState(true);
-  const [filterByLocation, setFilterByLocation] = useState(true);
+  const [filterByAge, setFilterByAge] = useState(false); // Default to false - don't filter by default
+  const [filterByLocation, setFilterByLocation] = useState(false); // Default to false - don't filter by default
   const [filteredMatches, setFilteredMatches] = useState([]);
+  const [showGeminiLoading, setShowGeminiLoading] = useState(true);
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Track mouse position for animated background
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Debug: Log when currentIndex changes
   useEffect(() => {
@@ -35,18 +52,75 @@ function MatchList() {
         if (!userId) {
           console.error("User ID not found in localStorage");
           setLoading(false);
+          setShowGeminiLoading(false);
           return;
         }
+
+        // Show Gemini loading for at least 3 seconds for better UX
+        const minLoadingTime = 3000;
+        const startTime = Date.now();
 
         console.log("Fetching matches for user:", userId);
         const res = await axios.get(`http://localhost:5001/api/match/${userId}`);
         
         console.log("Matches response:", res.data);
         const matchesList = res.data.matches || [];
-        console.log(`Found ${matchesList.length} matches`);
+        console.log(`Found ${matchesList.length} matches from backend`);
+        console.log(`[MatchList] Backend matches:`, matchesList.map((m, i) => `${i+1}. ${m.name} (${m.userId}) - Email: ${m.email} - Score: ${((m.score || 0) * 100).toFixed(1)}%`));
+        
+        // Validate match data - ensure name, userId, and email are consistent
+        // Also fix any mismatches by fetching correct user data
+        const validatedMatches = [];
+        for (let idx = 0; idx < matchesList.length; idx++) {
+          let match = { ...matchesList[idx] }; // Create a copy to avoid mutating original
+          
+          if (!match.userId) {
+            console.error(`[MatchList] Match ${idx} missing userId:`, match);
+            continue; // Skip this match
+          }
+          if (!match.name) {
+            console.error(`[MatchList] Match ${idx} missing name:`, match);
+            continue; // Skip this match
+          }
+          if (!match.email) {
+            console.warn(`[MatchList] Match ${idx} missing email:`, match);
+          }
+          
+          // CRITICAL: Always fetch the correct user data from backend to ensure consistency
+          // This ensures name, email, and userId all come from the same user record
+          try {
+            const userRes = await axios.get(`http://localhost:5001/api/user/${match.userId}`);
+            const correctUser = userRes.data;
+            
+            // Verify the userId matches
+            if (correctUser.id !== match.userId) {
+              console.error(`[MatchList] ⚠️ CRITICAL: User ID mismatch! Match userId: ${match.userId}, User id: ${correctUser.id}`);
+              console.error(`[MatchList] Skipping match ${idx} due to userId mismatch`);
+              continue; // Skip this match
+            }
+            
+            // Always use the correct user data from the backend
+            match.name = correctUser.name;
+            match.email = correctUser.email;
+            match.profileImages = correctUser.profileImages || match.profileImages;
+            match.imageUrl = correctUser.imageUrl || match.imageUrl;
+            
+            console.log(`[MatchList] ✅ Verified match ${idx}: name="${match.name}", email="${match.email}", userId="${match.userId}"`);
+          } catch (err) {
+            console.error(`[MatchList] Failed to fetch user data for userId ${match.userId}:`, err);
+            // Skip this match if we can't verify the data
+            console.error(`[MatchList] Skipping match ${idx} due to unable to fetch user data`);
+            continue; // Don't add this match
+          }
+          
+          validatedMatches.push(match);
+        }
+        
+        // Use validated matches
+        const finalMatchesList = validatedMatches;
         
         // Filter matches by 60% threshold (score >= 0.6)
-        const filteredMatches = matchesList.filter(match => {
+        const filteredMatches = finalMatchesList.filter(match => {
           const score = match.score || 0;
           return score >= 0.6;
         });
@@ -59,8 +133,8 @@ function MatchList() {
           return scoreB - scoreA; // High to low
         });
         
-        // Remove duplicates based on userId using Map for better performance
-        // Also handle cases where userId might be undefined or null
+        // CRITICAL: Remove duplicates based on userId - use multiple passes for safety
+        // First pass: Use Map to deduplicate (keeps first occurrence)
         const uniqueMap = new Map();
         const seenUserIds = new Set();
         
@@ -71,28 +145,57 @@ function MatchList() {
             return;
           }
           
+          // Normalize userId
+          const normalizedUserId = String(match.userId).trim();
+          
           // Skip if we've already seen this userId
-          if (seenUserIds.has(match.userId)) {
-            console.log(`Skipping duplicate match: ${match.userId} (${match.name || 'Unknown'})`);
+          if (seenUserIds.has(normalizedUserId)) {
+            console.warn(`[MatchList] ⚠️ Skipping duplicate match: ${normalizedUserId} (${match.name || 'Unknown'})`);
             return;
           }
           
           // Add to both Map and Set for tracking
-          uniqueMap.set(match.userId, match);
-          seenUserIds.add(match.userId);
+          uniqueMap.set(normalizedUserId, match);
+          seenUserIds.add(normalizedUserId);
         });
         
         const uniqueMatches = Array.from(uniqueMap.values());
-        console.log(`Found ${sortedMatches.length} matches, ${uniqueMatches.length} unique after deduplication`);
-        console.log("Unique match IDs:", uniqueMatches.map(m => m.userId));
+        console.log(`[MatchList] First pass: ${sortedMatches.length} -> ${uniqueMatches.length} unique matches`);
         
-        // Additional check: filter out any remaining duplicates by userId
-        const finalMatches = uniqueMatches.filter((match, index, self) => 
-          index === self.findIndex(m => m.userId === match.userId)
-        );
+        // Second pass: Additional filter to catch any remaining duplicates
+        const finalMatches = [];
+        const finalSeenUserIds = new Set();
         
-        if (finalMatches.length !== uniqueMatches.length) {
-          console.warn(`Additional duplicates found! ${uniqueMatches.length} -> ${finalMatches.length}`);
+        uniqueMatches.forEach((match, index) => {
+          const normalizedUserId = String(match.userId).trim();
+          if (!finalSeenUserIds.has(normalizedUserId)) {
+            finalSeenUserIds.add(normalizedUserId);
+            finalMatches.push(match);
+          } else {
+            console.error(`[MatchList] ❌ CRITICAL: Found duplicate in second pass: ${normalizedUserId} (${match.name}) at index ${index}`);
+          }
+        });
+        
+        console.log(`[MatchList] Second pass: ${uniqueMatches.length} -> ${finalMatches.length} final unique matches`);
+        console.log(`[MatchList] Final matches:`, finalMatches.map((m, i) => `${i+1}. ${m.name} (${m.userId}) - Score: ${((m.score || 0) * 100).toFixed(1)}%`));
+        
+        // Final verification: Check for any remaining duplicates
+        const finalUserIds = finalMatches.map(m => String(m.userId).trim());
+        const duplicateUserIds = finalUserIds.filter((id, index) => finalUserIds.indexOf(id) !== index);
+        if (duplicateUserIds.length > 0) {
+          console.error(`[MatchList] ❌ CRITICAL ERROR: Found ${duplicateUserIds.length} duplicate userIds after all filtering:`, duplicateUserIds);
+          // Remove duplicates one more time - keep only first occurrence
+          const trulyUnique = [];
+          const trulySeen = new Set();
+          for (const match of finalMatches) {
+            const id = String(match.userId).trim();
+            if (!trulySeen.has(id)) {
+              trulySeen.add(id);
+              trulyUnique.push(match);
+            }
+          }
+          console.error(`[MatchList] Removed ${finalMatches.length - trulyUnique.length} additional duplicates`);
+          return trulyUnique;
         }
         
         // Ensure final matches are sorted high to low
@@ -103,28 +206,51 @@ function MatchList() {
         });
         
         setMatches(finalMatches);
-        setFilteredMatches(finalMatches); // Initially show all matches
+        // Initialize filteredMatches with all matches - don't apply filters automatically
+        setFilteredMatches(finalMatches);
+        setFiltersInitialized(true); // Set to true immediately since we're not filtering by default
+        console.log(`[MatchList] Initialized: ${finalMatches.length} matches, filteredMatches set to ${finalMatches.length}`);
+        console.log(`[MatchList] Match names:`, finalMatches.map(m => `${m.name} (${m.userId})`));
+        
         if (finalMatches.length > 0) {
-          // Fetch preferences for all matches
-          finalMatches.forEach(match => {
+          // Fetch preferences for all matches - verify userId is correct
+          finalMatches.forEach((match, idx) => {
+            if (!match.userId) {
+              console.error(`[MatchList] ERROR: Match ${idx} missing userId!`, match);
+              return;
+            }
+            console.log(`[MatchList] Fetching preferences for match ${idx}: ${match.name} (userId: ${match.userId})`);
             fetchMatchDetails(match.userId);
           });
           
-          // Fetch current user name and preferences for filtering
+          // Fetch current user name (but don't apply filters automatically)
           const currentUserId = localStorage.getItem("userId");
           if (currentUserId) {
             axios.get(`http://localhost:5001/api/user/${currentUserId}`)
               .then(res => {
                 setCurrentUserName(res.data.name || "You");
-                // Apply filters based on user preferences
-                applyFilters(finalMatches, res.data);
+                // Don't apply filters automatically - only when user toggles switches
               })
-              .catch(err => console.error("Error fetching current user:", err));
+              .catch(err => {
+                console.error("Error fetching current user:", err);
+              });
           }
+        } else {
+          // No matches
+          setFilteredMatches([]);
         }
+        
+        // Ensure minimum loading time for Gemini animation
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+        
+        // Hide Gemini loading and show matches
+        setShowGeminiLoading(false);
       } catch (err) {
         console.error("Error fetching matches:", err);
         console.error("Error details:", err.response?.data);
+        setShowGeminiLoading(false);
       } finally {
         setLoading(false);
       }
@@ -137,12 +263,13 @@ function MatchList() {
     try {
       // Fetch preferences
       const prefRes = await axios.get(`http://localhost:5001/api/taste/${userId}`);
+      console.log(`[MatchList] Fetched preferences for userId ${userId}:`, prefRes.data);
       setMatchPreferences(prev => ({
         ...prev,
         [userId]: prefRes.data
       }));
     } catch (err) {
-      console.error("Error fetching match preferences:", err);
+      console.error(`[MatchList] Error fetching match preferences for userId ${userId}:`, err);
     }
   };
 
@@ -229,6 +356,9 @@ function MatchList() {
     }
 
     setFilteredMatches(filtered);
+    setFiltersInitialized(true);
+    console.log(`[MatchList] Applied filters: ${filtered.length} matches after filtering (from ${matchesList.length} total)`);
+    console.log(`[MatchList] Filtered match names:`, filtered.map(m => `${m.name} (${m.userId})`));
   };
 
   const handleFilterToggle = async () => {
@@ -282,15 +412,25 @@ function MatchList() {
         const displayMatches = showFilters ? matches : filteredMatches;
         if (isMatch) {
           // It's a confirmed match! Both users liked each other
-          console.log("🎉 It's a match!", displayMatches[index].name);
-          console.log("Setting matched user:", displayMatches[index]);
+          const matchData = displayMatches[index];
+          console.log("🎉 It's a match!", matchData.name);
+          console.log("Setting matched user:", matchData);
+          console.log("Match data - name:", matchData.name, "userId:", matchData.userId, "email:", matchData.email);
+          
+          // Verify match data consistency
+          if (!matchData.userId) {
+            console.error("ERROR: Match data missing userId!", matchData);
+          }
+          if (!matchData.name) {
+            console.error("ERROR: Match data missing name!", matchData);
+          }
           
           // Set both states together
-          const matchedUserData = { ...displayMatches[index] };
+          const matchedUserData = { ...matchData };
           setMatchedUser(matchedUserData);
           setShowMatchModal(true);
           
-          console.log("Match modal state - showMatchModal: true, matchedUser:", matchedUserData.name);
+          console.log("Match modal state - showMatchModal: true, matchedUser:", matchedUserData.name, "userId:", matchedUserData.userId);
           
           // Don't advance yet - wait for user to close modal
           return;
@@ -313,9 +453,27 @@ function MatchList() {
         console.error("Error sending like:", err);
         console.error("Error response:", err.response?.data);
       }
+    } else if (direction === 'left') {
+      // Pass - send pass to backend
+      const userId = localStorage.getItem("userId");
+      const displayMatches = showFilters ? matches : filteredMatches;
+      const matchUserId = displayMatches[index].userId;
+      
+      console.log(`Sending pass from ${userId} to ${matchUserId}`);
+      
+      try {
+        await axios.post("http://localhost:5001/api/pass", {
+          fromUser: userId,
+          toUser: matchUserId
+        });
+        console.log("Pass sent successfully");
+      } catch (err) {
+        console.error("Error sending pass:", err);
+        console.error("Error response:", err.response?.data);
+      }
     }
     
-    // Move to next match after a short delay
+    // Move to next match after a short delay with animation
     // Use functional update to get the latest currentIndex
     setTimeout(() => {
       setCurrentIndex(prevIndex => {
@@ -323,13 +481,14 @@ function MatchList() {
         const displayMatches = showFilters ? matches : filteredMatches;
         console.log(`Moving from index ${prevIndex} to ${nextIndex}`);
         if (nextIndex < displayMatches.length) {
+          // Trigger animation by briefly setting opacity to 0, then back to 1
           return nextIndex;
         } else {
           console.log("No more matches");
           return prevIndex; // Stay at current if no more matches
         }
       });
-    }, 300);
+    }, 400); // Slightly longer delay for smoother animation
   };
 
   const outOfFrame = (name) => {
@@ -378,37 +537,72 @@ function MatchList() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen text-white text-xl bg-[#0f172a]">
-        Loading your matches…
-      </div>
-    );
+  // Show Gemini loading screen when first loading matches
+  if (showGeminiLoading || loading) {
+    return <GeminiLoading message="Gemini is finding matches for you" />;
   }
 
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-white bg-[#0f172a]">
-        <div className="text-4xl mb-4">💔</div>
-        <div className="text-xl">No matches found yet.</div>
-        <div className="text-gray-400 mt-2">Try updating your preferences!</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col justify-center items-center">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ top: '20%', left: '20%' }}></div>
+          <div className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ bottom: '20%', right: '20%', animationDelay: '1s' }}></div>
+        </div>
+        <div className="relative z-10 text-center">
+          <div className="text-6xl mb-6">💔</div>
+          <h2 className="text-3xl font-bold text-white mb-2">No matches found yet</h2>
+          <p className="text-white/70 text-lg">Try updating your preferences!</p>
+        </div>
       </div>
     );
   }
 
   // Show filter UI first
   if (showFilters && matches.length > 0) {
+    // Calculate display count: 
+    // - If filters are active (age or location), use filteredMatches.length
+    // - Otherwise, use matches.length (all matches)
+    const displayCount = (filterByAge || filterByLocation) ? filteredMatches.length : matches.length;
+    console.log(`[MatchList] Filter UI - matches.length: ${matches.length}, filteredMatches.length: ${filteredMatches.length}, filterByAge: ${filterByAge}, filterByLocation: ${filterByLocation}, displayCount: ${displayCount}`);
+    console.log(`[MatchList] Filter UI - Match names in matches:`, matches.map(m => `${m.name} (${m.userId})`));
+    console.log(`[MatchList] Filter UI - Match names in filteredMatches:`, filteredMatches.map(m => `${m.name} (${m.userId})`));
+    
     return (
-      <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6">
-        <div className="bg-gray-800 rounded-lg p-8 w-full max-w-md shadow-xl">
-          <h1 className="text-3xl font-bold mb-6 text-center">Filter Your Matches</h1>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col items-center justify-center p-6">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${mousePosition.y * 0.3}%`,
+              left: `${mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+            }}
+          />
+          <div
+            className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${100 - mousePosition.y * 0.3}%`,
+              right: `${100 - mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+              animationDelay: "1s",
+            }}
+          />
+        </div>
+        <div className="relative z-10 w-full max-w-md">
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20"></div>
+            <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
+              <h1 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Filter Your Matches</h1>
           
           <div className="space-y-6">
             {/* Age Filter Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
               <div>
-                <label className="text-lg font-semibold">Filter by Age Range</label>
-                <p className="text-sm text-gray-400">Show only matches within your preferred age range</p>
+                <label className="text-lg font-semibold text-white">Filter by Age Range</label>
+                <p className="text-sm text-white/60">Show only matches within your preferred age range</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -420,15 +614,15 @@ function MatchList() {
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-white/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-indigo-500"></div>
               </label>
             </div>
 
             {/* Location Filter Toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
               <div>
-                <label className="text-lg font-semibold">Filter by Location</label>
-                <p className="text-sm text-gray-400">Show only matches within your preferred distance</p>
+                <label className="text-lg font-semibold text-white">Filter by Location</label>
+                <p className="text-sm text-white/60">Show only matches within your preferred distance</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -440,29 +634,20 @@ function MatchList() {
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-white/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-indigo-500"></div>
               </label>
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8">
             <button
               onClick={handleContinueToMatches}
-              className="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
+              className="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-lg font-semibold transition"
             >
-              View {filteredMatches.length || matches.length} Matches →
+              View {displayCount} Matches →
             </button>
-            <button
-              onClick={() => {
-                setFilterByAge(false);
-                setFilterByLocation(false);
-                setFilteredMatches(matches);
-                handleContinueToMatches();
-              }}
-              className="px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm transition"
-            >
-              Show All
-            </button>
+          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -474,10 +659,17 @@ function MatchList() {
   
   if (currentIndex >= displayMatches.length) {
     return (
-      <div className="flex flex-col justify-center items-center h-screen text-white bg-[#0f172a]">
-        <div className="text-4xl mb-4">🎉</div>
-        <div className="text-xl">You've seen all matches!</div>
-        <div className="text-gray-400 mt-2">Check back later for more matches.</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col justify-center items-center">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ top: '20%', left: '20%' }}></div>
+          <div className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ bottom: '20%', right: '20%', animationDelay: '1s' }}></div>
+        </div>
+        <div className="relative z-10 text-center">
+          <div className="text-6xl mb-6">🎉</div>
+          <h2 className="text-3xl font-bold text-white mb-2">You've seen all matches!</h2>
+          <p className="text-white/70 text-lg">Check back later for more matches.</p>
+        </div>
       </div>
     );
   }
@@ -490,7 +682,42 @@ function MatchList() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${mousePosition.y * 0.3}%`,
+            left: `${mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${100 - mousePosition.y * 0.3}%`,
+            right: `${100 - mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+            animationDelay: "1s",
+          }}
+        />
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white rounded-full opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-24">
       {/* Like Sent Modal - Shows when user likes someone (not a match yet) */}
       {showLikeSentModal && likedUserName && (
         <div 
@@ -548,15 +775,18 @@ function MatchList() {
             </p>
 
             {/* Continue Button */}
-            <button
-              onClick={handleCloseLikeSentModal}
-              className="w-full bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl"
-              style={{
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-              }}
-            >
-              Continue Swiping
-            </button>
+              <button
+                onClick={handleCloseLikeSentModal}
+                className="w-full bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
+                style={{
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                <span>Continue Swiping</span>
+              </button>
           </div>
 
           {/* Add CSS animations */}
@@ -706,7 +936,10 @@ function MatchList() {
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
               >
-                💬 Chat with them
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>Chat with them</span>
               </button>
 
               {/* Jam Session Button */}
@@ -720,7 +953,10 @@ function MatchList() {
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
               >
-                🎵 Start a Jam Session
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <span>Start a Jam Session</span>
               </button>
 
               {/* Watch Party Button */}
@@ -734,7 +970,10 @@ function MatchList() {
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
                 }}
               >
-                🎬 Start a Watch Party
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Start a Watch Party</span>
               </button>
             </div>
 
@@ -787,19 +1026,15 @@ function MatchList() {
         </div>
       )}
 
-      {/* Match Counter */}
-      <div className="text-gray-400 mb-4 text-sm">
-        {currentIndex + 1} of {matches.length} {matches[currentIndex] ? `- ${matches[currentIndex].name}` : ''}
-      </div>
-
       {/* Tinder Card */}
       <div className="relative w-full max-w-md" style={{ height: '85vh', maxHeight: '700px' }}>
-        {matches.length > 0 && currentIndex < matches.length && matches.map((match, index) => {
+        {displayMatches.length > 0 && currentIndex < displayMatches.length && displayMatches.map((match, index) => {
           // Only show current card and next 2 cards for smooth transitions
           if (index < currentIndex) return null;
           if (index > currentIndex + 2) return null;
           
           const isCurrent = index === currentIndex;
+          const isNext = index === currentIndex + 1;
           
           return (
             <TinderCard
@@ -812,8 +1047,13 @@ function MatchList() {
               }}
               onCardLeftScreen={() => outOfFrame(match.name)}
               preventSwipe={['up', 'down']}
+              className={`
+                transition-all duration-500 ease-in-out
+                ${isCurrent ? 'opacity-100 scale-100 z-10 translate-x-0' : 'opacity-0 scale-95 z-0 translate-x-20'}
+                ${isNext ? 'opacity-30 scale-90 -translate-x-4' : ''}
+              `}
             >
-              <div className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col">
+              <div className={`bg-gray-800 rounded-2xl shadow-2xl overflow-hidden h-full flex flex-col ${isCurrent ? 'animate-slide-in' : ''}`}>
                 {/* Profile Pictures - Big */}
                 <div className="relative h-2/5 bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
                   {match.profileImages && Array.isArray(match.profileImages) && match.profileImages.length > 0 ? (
@@ -840,7 +1080,7 @@ function MatchList() {
                   )}
                   
                   {/* Compatibility Score Badge */}
-                  <div className="absolute top-4 right-4 bg-blue-600 px-4 py-2 rounded-full font-bold text-sm">
+                  <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 rounded-full font-bold text-sm text-white shadow-lg backdrop-blur-sm border border-white/20">
                     {((match.score || 0) * 100).toFixed(0)}% Match
                   </div>
                 </div>
@@ -849,6 +1089,24 @@ function MatchList() {
                 <div className="flex-1 p-6 flex flex-col min-h-0">
                   <h2 className="text-2xl font-bold mb-1">{match.name}</h2>
                   <p className="text-gray-400 mb-3 text-sm">{match.email}</p>
+                  
+                  {/* Debug: Verify match data is correct */}
+                  {(() => {
+                    console.log(`[MatchList] Card ${index}: name="${match.name}", userId="${match.userId}", email="${match.email}"`);
+                    console.log(`[MatchList] Preferences for ${match.userId}:`, matchPreferences[match.userId] ? 'Found' : 'Missing');
+                    
+                    // CRITICAL: Verify data consistency
+                    if (match.email && match.name) {
+                      // Check if email matches the name (basic sanity check)
+                      const emailName = match.email.split('@')[0].toLowerCase();
+                      const matchName = match.name.toLowerCase().replace(/\s*\(.*?\)\s*/g, '').replace(/\s+/g, '');
+                      if (!emailName.includes(matchName) && !matchName.includes(emailName)) {
+                        console.error(`[MatchList] ⚠️ WARNING: Name/Email mismatch! name="${match.name}", email="${match.email}"`);
+                      }
+                    }
+                    
+                    return null;
+                  })()}
 
                   {/* Preferences - Scrollable if needed, but try to fit */}
                   {matchPreferences[match.userId] && (
@@ -856,12 +1114,17 @@ function MatchList() {
                       {/* Movies */}
                       {matchPreferences[match.userId].movies && matchPreferences[match.userId].movies.length > 0 && (
                         <div>
-                          <h3 className="text-base font-semibold mb-2 text-blue-400">🎬 Movies</h3>
+                          <h3 className="text-base font-semibold mb-2 text-blue-300 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+                            </svg>
+                            Movies
+                          </h3>
                           <div className="flex flex-wrap gap-2">
                             {matchPreferences[match.userId].movies.slice(0, 4).map((movie, idx) => (
                               <span
                                 key={idx}
-                                className="bg-gray-700 px-2 py-1 rounded-full text-xs"
+                                className="bg-blue-500/20 border border-blue-500/30 px-3 py-1 rounded-full text-xs text-blue-200 backdrop-blur-sm"
                               >
                                 {typeof movie === 'object' ? movie.title || movie.name : movie}
                               </span>
@@ -873,12 +1136,17 @@ function MatchList() {
                       {/* Music */}
                       {matchPreferences[match.userId].music && matchPreferences[match.userId].music.length > 0 && (
                         <div>
-                          <h3 className="text-base font-semibold mb-2 text-pink-400">🎵 Music</h3>
+                          <h3 className="text-base font-semibold mb-2 text-purple-300 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                            Music
+                          </h3>
                           <div className="flex flex-wrap gap-2">
                             {matchPreferences[match.userId].music.slice(0, 4).map((artist, idx) => (
                               <span
                                 key={idx}
-                                className="bg-gray-700 px-2 py-1 rounded-full text-xs"
+                                className="bg-purple-500/20 border border-purple-500/30 px-3 py-1 rounded-full text-xs text-purple-200 backdrop-blur-sm"
                               >
                                 {typeof artist === 'object' ? artist.name || artist.title : artist}
                               </span>
@@ -890,12 +1158,17 @@ function MatchList() {
                       {/* TV Shows */}
                       {matchPreferences[match.userId].shows && matchPreferences[match.userId].shows.length > 0 && (
                         <div>
-                          <h3 className="text-base font-semibold mb-2 text-green-400">📺 TV Shows</h3>
+                          <h3 className="text-base font-semibold mb-2 text-pink-300 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            TV Shows
+                          </h3>
                           <div className="flex flex-wrap gap-2">
                             {matchPreferences[match.userId].shows.slice(0, 4).map((show, idx) => (
                               <span
                                 key={idx}
-                                className="bg-gray-700 px-2 py-1 rounded-full text-xs"
+                                className="bg-pink-500/20 border border-pink-500/30 px-3 py-1 rounded-full text-xs text-pink-200 backdrop-blur-sm"
                               >
                                 {typeof show === 'object' ? show.title || show.name : show}
                               </span>
@@ -916,17 +1189,47 @@ function MatchList() {
       <div className="flex gap-8 mt-8">
         <button
           onClick={handlePass}
-          className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center text-white text-2xl shadow-lg transition-transform hover:scale-110"
+          className="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 flex items-center justify-center text-white shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95"
         >
-          ✕
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
         <button
           onClick={handleLike}
-          className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-700 flex items-center justify-center text-white text-2xl shadow-lg transition-transform hover:scale-110"
+          className="w-16 h-16 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 flex items-center justify-center text-white shadow-lg transition-all duration-300 transform hover:scale-110 active:scale-95"
         >
-          ♥
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
         </button>
       </div>
+      </div>
+
+      {/* Add CSS animations for card transitions */}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            opacity: 0;
+            transform: translateX(30px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+          }
+        }
+      `}</style>
     </div>
   );
 }

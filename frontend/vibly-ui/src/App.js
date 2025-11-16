@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Preferences from "./pages/Preferences";
@@ -12,6 +13,7 @@ import JamSession from "./pages/JamSession";
 import WatchParty from "./pages/WatchParty";
 import Profile from "./pages/Profile";
 import AgePreference from "./pages/AgePreference";
+import MatchSettings from "./pages/MatchSettings";
 import RedirectToLogin from "./components/RedirectToLogin";
 
 function App() {
@@ -19,7 +21,7 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Routes>
-        <Route path="/" element={<RedirectToLogin />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/age-preference" element={<AgePreference />} />
