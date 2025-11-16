@@ -104,6 +104,43 @@ function Chat() {
     loadConversations();
   }, [userId, navigate, matchId]);
 
+  // Fetch conversation starters for new chats
+  const fetchConversationStarters = React.useCallback(async () => {
+    if (!selectedConversation || !userId) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      setConversationStarters(res.data.starters || []);
+    } catch (err) {
+      console.error("Error fetching conversation starters:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
+  // Analyze chat and get AI suggestions
+  const analyzeChat = React.useCallback(async (msgs) => {
+    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
+        messages: msgs,
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      setAiSuggestions(res.data.analysis);
+    } catch (err) {
+      console.error("Error analyzing chat:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
   // Set up socket and load messages when conversation is selected
   useEffect(() => {
     if (!selectedConversation || !userId) return;
@@ -118,12 +155,50 @@ function Chat() {
     });
 
     newSocket.on("connect", () => {
-      console.log("Connected to socket");
+      console.log("Connected to socket, joining room:", currentRoomId);
+      // Register user for notifications
+      newSocket.emit("registerUser", userId);
+      // Join the chat room
       newSocket.emit("joinRoom", currentRoomId);
+      console.log(`User ${userId} registered and joined room ${currentRoomId}`);
     });
 
+    newSocket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    // Track received message IDs to prevent duplicates
+    const receivedMessageIds = new Set();
+
     newSocket.on("receiveMessage", (data) => {
-      setMessages((prev) => [...prev, data]);
+      // Prevent duplicate messages
+      const messageId = data.id || `${data.senderId}-${data.timestamp}-${data.message}`;
+      if (receivedMessageIds.has(messageId)) {
+        console.log("Duplicate message ignored:", messageId);
+        return;
+      }
+      receivedMessageIds.add(messageId);
+      
+      console.log("Received message:", data);
+      setMessages((prev) => {
+        // Check if message already exists in state
+        const exists = prev.some(msg => 
+          msg.id === data.id || 
+          (msg.senderId === data.senderId && 
+           msg.message === data.message && 
+           Math.abs((msg.timestamp || 0) - (data.timestamp || 0)) < 1000)
+        );
+        if (exists) {
+          console.log("Message already in state, skipping");
+          return prev;
+        }
+        return [...prev, data];
+      });
+      
       // Update conversation list with new last message
       setConversations(prev => 
         prev.map(conv => 
@@ -216,19 +291,37 @@ function Chat() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !socket || !roomId || !selectedConversation) return;
+    if (!newMessage.trim() || !socket || !roomId || !selectedConversation) {
+      console.warn("Cannot send message - missing:", { socket: !!socket, roomId, selectedConversation: !!selectedConversation, message: newMessage.trim() });
+      return;
+    }
+
+    // Check if socket is connected
+    if (!socket.connected) {
+      console.warn("Socket not connected, attempting to reconnect...");
+      alert("Connection lost. Please refresh the page.");
+      return;
+    }
 
     const messageData = {
       roomId,
+      room: roomId, // Also include 'room' for socket routing
       senderId: userId,
-      message: newMessage.trim()
+      message: newMessage.trim(),
+      timestamp: Date.now()
     };
 
-    // Send via socket
+    // Send via socket (include room property for backend routing)
+    console.log("Sending message to room:", roomId, "from user:", userId);
+    console.log("Socket connected:", socket.connected, "Socket ID:", socket.id);
+    
     socket.emit("sendMessage", {
       ...messageData,
       room: roomId
     });
+    
+    // Optimistically add message to UI
+    setMessages((prev) => [...prev, messageData]);
 
     // Also save to database
     try {
@@ -351,6 +444,40 @@ function Chat() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    const userId = localStorage.getItem("userId");
+                    if (userId && selectedConversation?.userId) {
+                      try {
+                        await axios.post("http://localhost:5001/api/watch-party/start", {
+                          userId,
+                          matchId: selectedConversation.userId
+                        });
+                        console.log("✅ Watch party notification sent to", selectedConversation.userId);
+                        navigate(`/watch-party?matchId=${selectedConversation.userId}&notificationSent=true`);
+                      } catch (err) {
+                        console.error("❌ Error sending watch party notification:", err);
+                        navigate(`/watch-party?matchId=${selectedConversation.userId}`);
+                      }
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-purple-600/80 hover:bg-purple-600 text-white transition-all duration-300"
+                  title="Start Watch Party"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowAIHelper(!showAIHelper)}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
+                  title="AI Helper"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </button>
+>>>>>>> 74a83f7dc04ae31fab4a75aac05b023348e3c419
                 {messages.length > 0 && (
                   <button
                     onClick={getConflictResolution}

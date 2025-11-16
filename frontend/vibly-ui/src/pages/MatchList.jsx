@@ -25,6 +25,8 @@ function MatchList() {
   const [showGeminiLoading, setShowGeminiLoading] = useState(false); // Don't show loading until mode is selected
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [confirmedMatches, setConfirmedMatches] = useState([]);
+  const [showMatchesSidebar, setShowMatchesSidebar] = useState(true);
   // Initialize mode from localStorage immediately, or show selection if not set
   const [matchingMode, setMatchingMode] = useState(() => {
     const savedMode = localStorage.getItem("matchingMode");
@@ -49,6 +51,26 @@ function MatchList() {
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  // Fetch confirmed matches for sidebar
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+
+    const fetchConfirmedMatches = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5001/api/matches/confirmed/${userId}`);
+        setConfirmedMatches(res.data.matches || []);
+      } catch (err) {
+        console.error("Error fetching confirmed matches:", err);
+      }
+    };
+
+    fetchConfirmedMatches();
+    // Refresh matches every 30 seconds
+    const interval = setInterval(fetchConfirmedMatches, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Debug: Log when currentIndex changes
@@ -632,9 +654,9 @@ function MatchList() {
         });
         
         // Adjust index after removing the passed user
-        setTimeout(() => {
-          setCurrentIndex(prevIndex => {
-            const displayMatches = showFilters ? matches : filteredMatches;
+    setTimeout(() => {
+      setCurrentIndex(prevIndex => {
+        const displayMatches = showFilters ? matches : filteredMatches;
             if (prevIndex >= displayMatches.length) {
               return Math.max(0, displayMatches.length - 1);
             }
@@ -718,7 +740,7 @@ function MatchList() {
               animationDelay: "1s",
             }}
           />
-        </div>
+      </div>
         <div className="relative z-10 w-full max-w-2xl">
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20"></div>
@@ -992,8 +1014,103 @@ function MatchList() {
         ))}
       </div>
 
+      {/* Matches Sidebar */}
+      {showMatchesSidebar && confirmedMatches.length > 0 && (
+        <div className="fixed left-0 top-0 h-full w-80 bg-white/5 backdrop-blur-xl border-r border-white/20 z-50 overflow-y-auto">
+          <div className="p-4 border-b border-white/20 bg-white/5 sticky top-0">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Your Matches ({confirmedMatches.length})
+              </h2>
+              <button
+                onClick={() => setShowMatchesSidebar(false)}
+                className="text-white/60 hover:text-white transition-colors"
+                title="Hide sidebar"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            {confirmedMatches.map((match) => (
+              <div
+                key={match.userId}
+                onClick={() => navigate(`/chat?matchId=${match.userId}`)}
+                className="p-3 bg-white/5 hover:bg-white/10 rounded-lg cursor-pointer transition-all duration-300 border border-white/10 hover:border-purple-400/50"
+              >
+                <div className="flex items-center gap-3">
+                  {match.profileImages && Array.isArray(match.profileImages) && match.profileImages.length > 0 ? (
+                    <img
+                      src={match.profileImages[0]}
+                      alt={match.name}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : match.imageUrl ? (
+                    <img
+                      src={match.imageUrl}
+                      alt={match.name}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-lg font-bold text-white flex-shrink-0">
+                      {match.name?.charAt(0).toUpperCase() || "?"}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-white truncate">{match.name}</div>
+                    {match.score !== undefined && (
+                      <div className="text-xs text-white/60">
+                        {((match.score || 0) * 100).toFixed(0)}% Match
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const userId = localStorage.getItem("userId");
+                      if (userId && match.userId) {
+                        axios.post("http://localhost:5001/api/watch-party/start", {
+                          userId,
+                          matchId: match.userId
+                        }).then(() => {
+                          navigate(`/watch-party?matchId=${match.userId}&notificationSent=true`);
+                        }).catch(err => {
+                          console.error("Error starting watch party:", err);
+                          navigate(`/watch-party?matchId=${match.userId}`);
+                        });
+                      }
+                    }}
+                    className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                    title="Start Watch Party"
+                  >
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Toggle Sidebar Button (when hidden) */}
+      {!showMatchesSidebar && confirmedMatches.length > 0 && (
+        <button
+          onClick={() => setShowMatchesSidebar(true)}
+          className="fixed left-4 top-20 bg-white/10 backdrop-blur-xl hover:bg-white/20 text-white p-3 rounded-lg border border-white/20 z-50 transition-all duration-300"
+          title="Show matches"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
+
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-24">
+      <div className={`relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-24 ${showMatchesSidebar && confirmedMatches.length > 0 ? 'ml-80' : ''}`}>
       {/* Like Sent Modal - Shows when user likes someone (not a match yet) */}
       {showLikeSentModal && likedUserName && (
         <div 
@@ -1051,18 +1168,18 @@ function MatchList() {
             </p>
 
             {/* Continue Button */}
-              <button
-                onClick={handleCloseLikeSentModal}
+            <button
+              onClick={handleCloseLikeSentModal}
                 className="w-full bg-white text-purple-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
-                style={{
-                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
-                }}
-              >
+              style={{
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+              }}
+            >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
                 <span>Continue Swiping</span>
-              </button>
+            </button>
           </div>
 
           {/* Add CSS animations */}

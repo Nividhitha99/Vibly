@@ -41,7 +41,7 @@ io.on("connection", (socket) => {
     const roomId = data.room || data.roomId;
     
     if (!roomId) {
-      console.error("[BACKEND] No room ID provided in sendMessage");
+      console.warn("sendMessage received without roomId:", data);
       return;
     }
     
@@ -50,24 +50,17 @@ io.on("connection", (socket) => {
       return;
     }
     
-    // Verify socket is in the room
-    const socketsInRoom = await io.in(roomId).fetchSockets();
-    const isInRoom = socketsInRoom.some(s => s.id === socket.id);
+    console.log(`Broadcasting message to room ${roomId}:`, data.message);
     
-    if (!isInRoom) {
-      console.warn(`[BACKEND] Socket ${socket.id} tried to send message to room ${roomId} but is not in that room`);
-      // Still allow it, but log a warning
-    }
-    
-    console.log(`[BACKEND] Broadcasting message to room ${roomId} from ${data.senderId} (${socketsInRoom.length} sockets in room)`);
-    
-    // Broadcast to all sockets in the room (including sender for consistency)
+    // Broadcast to all users in the room (including sender for confirmation)
     io.to(roomId).emit("receiveMessage", {
       ...data,
       room: roomId,
       roomId: roomId,
-      timestamp: data.timestamp || Date.now() // Ensure timestamp exists
+      timestamp: data.timestamp || Date.now()
     });
+    
+    console.log(`Message broadcasted to room ${roomId}`);
   });
 
   socket.on("joinRoom", (roomId) => {
