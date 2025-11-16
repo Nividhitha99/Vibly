@@ -79,7 +79,6 @@
       "id": "18ec8fd8-1953-4f63-981a-34f9621b5391",
       "name": "Alex",
       "email": "alex@example.com",
-<<<<<<< Updated upstream
       "password": "$2b$10$0CFnRDCaoKSkseY70uOT2.ladeJykvCifzo3CAkzo8jrJaM4Vd37e",
       "ageRangeMin": 18,
       "ageRangeMax": 45,
@@ -91,9 +90,6 @@
       "city": "Bilbao",
       "gender": "female",
       "lookingFor": "male"
-=======
-      "password": "$2b$10$./y3Aw/CVd07i.sawImti.IaAuD6sJrpIVefDx7R6zJZgucvmK8Rq"
->>>>>>> Stashed changes
     },
     {
       "id": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
@@ -201,7 +197,6 @@
       "id": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
       "name": "Taylor (Mock)",
       "email": "taylor.mock@example.com",
-<<<<<<< Updated upstream
       "password": "$2b$10$dummy.hash.for.mock.user.password123",
       "ageRangeMin": 18,
       "ageRangeMax": 45,
@@ -213,15 +208,12 @@
       "city": "Frankfurt",
       "gender": "female",
       "lookingFor": "male"
-=======
-      "password": "$2b$10$DFw0nKec9N7pm75/8c.K7e1hwclWpAkxlmQaiiVMqJW0xqgobS8iK"
     },
     {
       "id": "7cfc2bc4-2213-4a9f-8c29-5499f26803da",
       "name": "subi",
       "email": "subi@gmail.com",
       "password": "$2b$10$fLHCLe1VRMzbcyJmwHHJf.pVtYhnmhuDWVMQElcxMKewiqY1q9lee"
->>>>>>> Stashed changes
     }
   ],
   "tastes": [
@@ -276,7 +268,82 @@
     },
     {
       "userId": "18ec8fd8-1953-4f63-981a-34f9621b5391",
-      "movies": [],
+      "movies": [
+        {
+          "id": 1062722,
+          "title": "Frankenstein",
+          "releaseDate": "2025-10-17",
+          "overview": "Dr. Victor Frankenstein, a brilliant but egotistical scientist, brings a creature to life in a monstrous experiment that ultimately leads to the undoing of both the creator and his tragic creation.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/g4JtvGlQO7DByTI6frUobqvSL3R.jpg",
+          "genreIds": [
+            18,
+            27,
+            14
+          ],
+          "popularity": 841.4715,
+          "voteAverage": 7.888,
+          "type": "movie"
+        },
+        {
+          "id": 1248226,
+          "title": "Playdate",
+          "releaseDate": "2025-11-05",
+          "overview": "When out-of-work accountant Brian joins stay-at-home dad Jeff for a playdate with their sons, he expects a laid-back afternoon. Instead, they're chased by mercenaries, and Brian—totally unprepared—must survive one absurd obstacle after another.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/fGodXWqJkkkbSebPIlxLSygV8GY.jpg",
+          "genreIds": [
+            28,
+            35,
+            10751
+          ],
+          "popularity": 369.57,
+          "voteAverage": 6.551,
+          "type": "movie"
+        },
+        {
+          "id": 1242898,
+          "title": "Predator: Badlands",
+          "releaseDate": "2025-11-05",
+          "overview": "Cast out from his clan, a young Predator finds an unlikely ally in a damaged android and embarks on a treacherous journey in search of the ultimate adversary.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/ef2QSeBkrYhAdfsWGXmp0lvH0T1.jpg",
+          "genreIds": [
+            28,
+            878,
+            12
+          ],
+          "popularity": 294.6409,
+          "voteAverage": 7.282,
+          "type": "movie"
+        },
+        {
+          "id": 1054867,
+          "title": "One Battle After Another",
+          "releaseDate": "2025-09-23",
+          "overview": "Washed-up revolutionary Bob exists in a state of stoned paranoia, surviving off-grid with his spirited, self-reliant daughter, Willa. When his evil nemesis resurfaces after 16 years and she goes missing, the former radical scrambles to find her, father and daughter both battling the consequences of his past.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/m1jFoahEbeQXtx4zArT2FKdbNIj.jpg",
+          "genreIds": [
+            28,
+            53,
+            80
+          ],
+          "popularity": 257.0325,
+          "voteAverage": 7.668,
+          "type": "movie"
+        },
+        {
+          "id": 1197137,
+          "title": "Black Phone 2",
+          "releaseDate": "2025-10-15",
+          "overview": "Four years after escaping The Grabber, Finney Blake is struggling with his life after captivity. When his sister Gwen begins receiving calls in her dreams from the black phone and seeing disturbing visions of three boys being stalked at a winter camp, the siblings become determined to solve the mystery and confront a killer who has grown more powerful in death and more significant to them than either could imagine.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/xUWUODKPIilQoFUzjHM6wKJkP3Y.jpg",
+          "genreIds": [
+            27,
+            53
+          ],
+          "popularity": 219.9612,
+          "voteAverage": 7.149,
+          "type": "movie"
+        }
+      ],
       "music": [],
       "shows": [],
       "weights": {
@@ -562,6 +629,48 @@
             "Adventure"
           ],
           "type": "tv"
+        },
+        {
+          "id": 66732,
+          "title": "Stranger Things",
+          "firstAirDate": "2016-07-15",
+          "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/cVxVGwHce6xnW8UaVUggaPXbmoE.jpg",
+          "genreIds": [
+            10765,
+            9648,
+            10759
+          ],
+          "popularity": 258.4534,
+          "voteAverage": 8.6,
+          "type": "tv"
+        },
+        {
+          "id": 200875,
+          "title": "IT: Welcome to Derry",
+          "firstAirDate": "2025-10-26",
+          "overview": "In 1962, a couple with their son move to Derry, Maine just as a young boy disappears. With their arrival, very bad things begin to happen in the town.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/nyy3BITeIjviv6PFIXtqvc8i6xi.jpg",
+          "genreIds": [
+            18,
+            9648
+          ],
+          "popularity": 296.413,
+          "voteAverage": 7.902,
+          "type": "tv"
+        },
+        {
+          "id": 244557,
+          "title": "Mahsun J",
+          "firstAirDate": "2024-01-26",
+          "overview": "Mahsun is a motorcycle courier in Istanbul. While searching for a way out of his life filled with debt, he accidentally discovers his \"greatest\" talent and decides to become a GIGOLO. Her manager will be her friend Leyla, who is a failed advertising executive.",
+          "posterPath": "https://image.tmdb.org/t/p/w200/f6VrRlLqbWiGlhdBT658rWe1nLQ.jpg",
+          "genreIds": [
+            35
+          ],
+          "popularity": 165.6799,
+          "voteAverage": 7.867,
+          "type": "tv"
         }
       ],
       "weights": {
@@ -569,14 +678,10 @@
         "music": 0.4,
         "shows": 0.2
       },
-      "region": "US",
+      "region": "Unknown",
       "regionPreference": "any",
-      "languages": [
-        "en"
-      ],
-      "preferredLanguages": [
-        "en"
-      ]
+      "languages": [],
+      "preferredLanguages": []
     },
     {
       "userId": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
@@ -11196,6 +11301,61 @@
     {
       "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
       "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "status": "confirmed"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "e738f934-26fe-46fe-a45c-2721bc5739ec",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "e738f934-26fe-46fe-a45c-2721bc5739ec",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "status": "pending"
+    },
+    {
+      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "toUser": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
       "status": "pending"
     }
   ],
@@ -11224,9 +11384,427 @@
       "type": "like",
       "message": "Reetu wants to connect with you!",
       "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
-      "read": false,
+      "read": true,
       "createdAt": 1763246279458
+    },
+    {
+      "id": "1763247427146ly9vmm32c",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "like",
+      "message": "Reetu wants to connect with you!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "read": true,
+      "createdAt": 1763247427146
+    },
+    {
+      "id": "1763247800124xmwxchuhl",
+      "userId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "type": "jam-invite",
+      "message": "Taylor invited you to a jam session!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763247800124
+    },
+    {
+      "id": "1763247957537pcjcdmbnx",
+      "userId": "e738f934-26fe-46fe-a45c-2721bc5739ec",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763247957537
+    },
+    {
+      "id": "17632479752205oz93lkq9",
+      "userId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763247975220
+    },
+    {
+      "id": "1763248006905gtcrmbfmu",
+      "userId": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763248006905
+    },
+    {
+      "id": "1763248010981uq5j1xpgs",
+      "userId": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763248010981
+    },
+    {
+      "id": "1763248022542v88r067ic",
+      "userId": "4cbc95e0-bcec-40b3-9d8d-1c11816c81b3",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763248022542
+    },
+    {
+      "id": "17632480299369vvi9k1m4",
+      "userId": "e738f934-26fe-46fe-a45c-2721bc5739ec",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763248029936
+    },
+    {
+      "id": "1763248310740vpdolyfol",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763248310740
+    },
+    {
+      "id": "1763248511339zzx2lx66y",
+      "userId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763248511339
+    },
+    {
+      "id": "1763248555652x5a4njblk",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763248555652
+    },
+    {
+      "id": "1763248767441q8raj8uvl",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763248767441
+    },
+    {
+      "id": "1763249059280gysh3ii78",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763249059280
+    },
+    {
+      "id": "176324910014481voj1m4x",
+      "userId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763249100144
+    },
+    {
+      "id": "176324913632863p50sj2u",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763249136328
+    },
+    {
+      "id": "1763251738174l9y48azxs",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763251738174
+    },
+    {
+      "id": "17632518043010sasam042",
+      "userId": "53bad0c1-bd1d-4bf7-b2a1-e24fa8af74c4",
+      "type": "like",
+      "message": "Taylor wants to connect with you!",
+      "relatedUserId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "data": null,
+      "read": false,
+      "createdAt": 1763251804301
+    },
+    {
+      "id": "17632521198170xtblf5fj",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": false,
+      "createdAt": 1763252119817
+    },
+    {
+      "id": "1763252139511g9is85m4l",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763252139511
+    },
+    {
+      "id": "1763252568388obrme23ah",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763252568388
+    },
+    {
+      "id": "1763252781397g9qhlsid5",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763252781398
+    },
+    {
+      "id": "1763252897964xmtonwi87",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763252897965
+    },
+    {
+      "id": "1763253382029jnkofle6h",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763253382029
+    },
+    {
+      "id": "1763253535756wk7wyx05l",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": false,
+      "createdAt": 1763253535756
+    },
+    {
+      "id": "176325376164084sxdk0k9",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": true,
+      "createdAt": 1763253761640
+    },
+    {
+      "id": "17632545105943fcqyv38a",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "jam-invite",
+      "message": "Reetu invited you to a jam session!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": {
+        "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6"
+      },
+      "read": false,
+      "createdAt": 1763254510594
     }
   ],
-  "messages": []
+  "messages": [
+    {
+      "id": "1763249311338",
+      "roomId": "487d671b-3343-4511-af54-0062b3cf80dd-chate14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "hiii",
+      "timestamp": 1763249311338
+    },
+    {
+      "id": "1763252162233",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "HIii",
+      "timestamp": 1763252162233
+    },
+    {
+      "id": "1763252186332",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "Heylooo",
+      "timestamp": 1763252186332
+    },
+    {
+      "id": "1763252365729",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "hey",
+      "timestamp": 1763252365729
+    },
+    {
+      "id": "1763252378125",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "hey",
+      "timestamp": 1763252378125
+    },
+    {
+      "id": "1763252400343",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "i am not getting your texts",
+      "timestamp": 1763252400343
+    },
+    {
+      "id": "1763252556028",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "hi",
+      "timestamp": 1763252556029
+    },
+    {
+      "id": "1763252573917",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "heyyyy",
+      "timestamp": 1763252573917
+    },
+    {
+      "id": "1763252765707",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "hi",
+      "timestamp": 1763252765707
+    },
+    {
+      "id": "1763252928818",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "hi2",
+      "timestamp": 1763252928818
+    },
+    {
+      "id": "1763252944786",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "okay so i dont have to refresh again to get texts lol",
+      "timestamp": 1763252944786
+    },
+    {
+      "id": "1763253032219",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "lets see",
+      "timestamp": 1763253032219
+    },
+    {
+      "id": "1763253153203",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "bro",
+      "timestamp": 1763253153203
+    },
+    {
+      "id": "1763253160750",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "bro",
+      "timestamp": 1763253160750
+    },
+    {
+      "id": "1763253174398",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "hi",
+      "timestamp": 1763253174398
+    },
+    {
+      "id": "1763253191234",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "k",
+      "timestamp": 1763253191234
+    },
+    {
+      "id": "1763253466239",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "hi",
+      "timestamp": 1763253466239
+    },
+    {
+      "id": "1763253890297",
+      "roomId": "jam-487d671b-3343-4511-af54-0062b3cf80dd-e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "message": "hello",
+      "timestamp": 1763253890297
+    }
+  ]
 }

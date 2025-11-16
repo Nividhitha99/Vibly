@@ -20,7 +20,6 @@ export default function Login() {
     );
 
     localStorage.setItem("userId", res.data.userId);
-<<<<<<< Updated upstream
     
     // Check if profile is complete
     try {
@@ -39,9 +38,6 @@ export default function Login() {
       console.error("Error fetching user after login:", userErr);
       navigate("/profile");
     }
-=======
-    window.location.href = "/preferences";
->>>>>>> Stashed changes
   } catch (err) {
       setError(err.response?.data?.error || "Invalid credentials");
   }
