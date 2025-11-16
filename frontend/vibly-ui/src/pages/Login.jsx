@@ -257,6 +257,13 @@ export default function Login() {
             </div>
           </div>
         </div>
+        
+        {/* Bottom text with left-to-right animation */}
+        <div className="mt-16 text-center overflow-hidden">
+          <p className="text-white/80 text-3xl lg:text-4xl font-semibold animate-slide-in-left" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+            Connect with Movies, Music & More....
+          </p>
+        </div>
 
         {/* Back to Landing */}
         <div className="text-center mt-4 sm:mt-6">
@@ -322,6 +329,21 @@ export default function Login() {
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 3s ease infinite;
+        }
+        
+        @keyframes slide-in-left {
+          from {
+            opacity: 0;
+            transform: translateX(-100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .animate-slide-in-left {
+          animation: slide-in-left 1s ease-out forwards;
         }
         
         .animate-shake {

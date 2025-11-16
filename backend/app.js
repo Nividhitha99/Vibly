@@ -74,6 +74,7 @@ app.use("/api/ai", require("./routes/conversationRoutes"));
 app.use("/api/recommend", require("./routes/aiRecommendationRoutes"));
 app.use("/api/watchlist", require("./routes/watchListRoutes"));
 app.use("/api/match-status", require("./routes/matchStatusRoutes"));
+app.use("/api/pass", require("./routes/passRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/ai-chat", require("./routes/chatAIroutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
