@@ -60,6 +60,43 @@ function Chat() {
     loadConversations();
   }, [userId, navigate, matchId]);
 
+  // Fetch conversation starters for new chats
+  const fetchConversationStarters = React.useCallback(async () => {
+    if (!selectedConversation || !userId) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      setConversationStarters(res.data.starters || []);
+    } catch (err) {
+      console.error("Error fetching conversation starters:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
+  // Analyze chat and get AI suggestions
+  const analyzeChat = React.useCallback(async (msgs) => {
+    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
+        messages: msgs,
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      setAiSuggestions(res.data.analysis);
+    } catch (err) {
+      console.error("Error analyzing chat:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
   // Set up socket and load messages when conversation is selected
   useEffect(() => {
     if (!selectedConversation || !userId) return;
@@ -74,12 +111,50 @@ function Chat() {
     });
 
     newSocket.on("connect", () => {
-      console.log("Connected to socket");
+      console.log("Connected to socket, joining room:", currentRoomId);
+      // Register user for notifications
+      newSocket.emit("registerUser", userId);
+      // Join the chat room
       newSocket.emit("joinRoom", currentRoomId);
+      console.log(`User ${userId} registered and joined room ${currentRoomId}`);
     });
 
+    newSocket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    // Track received message IDs to prevent duplicates
+    const receivedMessageIds = new Set();
+
     newSocket.on("receiveMessage", (data) => {
-      setMessages((prev) => [...prev, data]);
+      // Prevent duplicate messages
+      const messageId = data.id || `${data.senderId}-${data.timestamp}-${data.message}`;
+      if (receivedMessageIds.has(messageId)) {
+        console.log("Duplicate message ignored:", messageId);
+        return;
+      }
+      receivedMessageIds.add(messageId);
+      
+      console.log("Received message:", data);
+      setMessages((prev) => {
+        // Check if message already exists in state
+        const exists = prev.some(msg => 
+          msg.id === data.id || 
+          (msg.senderId === data.senderId && 
+           msg.message === data.message && 
+           Math.abs((msg.timestamp || 0) - (data.timestamp || 0)) < 1000)
+        );
+        if (exists) {
+          console.log("Message already in state, skipping");
+          return prev;
+        }
+        return [...prev, data];
+      });
+      
       // Update conversation list with new last message
       setConversations(prev => 
         prev.map(conv => 
@@ -121,43 +196,6 @@ function Chat() {
       newSocket.disconnect();
     };
   }, [selectedConversation, userId, initialMessage, fetchConversationStarters, analyzeChat]);
-
-  // Fetch conversation starters for new chats
-  const fetchConversationStarters = React.useCallback(async () => {
-    if (!selectedConversation || !userId) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setConversationStarters(res.data.starters || []);
-    } catch (err) {
-      console.error("Error fetching conversation starters:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
-
-  // Analyze chat and get AI suggestions
-  const analyzeChat = React.useCallback(async (msgs) => {
-    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
-        messages: msgs,
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setAiSuggestions(res.data.analysis);
-    } catch (err) {
-      console.error("Error analyzing chat:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
 
   // Get flirty suggestions
   const getFlirtySuggestions = async () => {
@@ -205,19 +243,37 @@ function Chat() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !socket || !roomId || !selectedConversation) return;
+    if (!newMessage.trim() || !socket || !roomId || !selectedConversation) {
+      console.warn("Cannot send message - missing:", { socket: !!socket, roomId, selectedConversation: !!selectedConversation, message: newMessage.trim() });
+      return;
+    }
+
+    // Check if socket is connected
+    if (!socket.connected) {
+      console.warn("Socket not connected, attempting to reconnect...");
+      alert("Connection lost. Please refresh the page.");
+      return;
+    }
 
     const messageData = {
       roomId,
+      room: roomId, // Also include 'room' for socket routing
       senderId: userId,
-      message: newMessage.trim()
+      message: newMessage.trim(),
+      timestamp: Date.now()
     };
 
-    // Send via socket
+    // Send via socket (include room property for backend routing)
+    console.log("Sending message to room:", roomId, "from user:", userId);
+    console.log("Socket connected:", socket.connected, "Socket ID:", socket.id);
+    
     socket.emit("sendMessage", {
       ...messageData,
       room: roomId
     });
+    
+    // Optimistically add message to UI
+    setMessages((prev) => [...prev, messageData]);
 
     // Also save to database
     try {
