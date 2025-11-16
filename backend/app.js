@@ -2,7 +2,7 @@
 require("dotenv").config();
 
 // Hardcoded API keys (for development)
-process.env.GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
+process.env.GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyC9f18CZUqQE4OEh3bYPtaKr0xTW9HVTcI";
 process.env.TMDB_API_KEY = process.env.TMDB_API_KEY || "e3f340ed60a45e0fd320fb3e4b624b3c";
 process.env.SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "ecd944e392f245a7a893dceacfca6834";
 process.env.SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "1e2c66214bae4630a2513415864bd993";

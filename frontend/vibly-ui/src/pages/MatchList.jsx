@@ -66,17 +66,22 @@ function MatchList() {
     console.log("[MatchList] Skip mode selection:", skipModeSelection);
     console.log("[MatchList] Saved mode:", savedMode);
     
-    // If coming from Preferences page, skip mode selection and use saved/default mode
+    // If coming from Preferences page, Profile page, or any preferences-related flow, skip mode selection
     if (skipModeSelection) {
-      console.log("[MatchList] Coming from Preferences - skipping mode selection");
+      console.log("[MatchList] Coming from Preferences/Profile - skipping mode selection");
       const modeToUse = savedMode || "preferences";
       setMatchingMode(modeToUse);
       setShowModeSelection(false);
-      // Clear the state so it doesn't persist on refresh
-      navigate(location.pathname, { replace: true, state: {} });
+      setLoading(false);
+      setShowGeminiLoading(false);
+      // Clear the state so it doesn't persist on refresh, but do it after state is set
+      setTimeout(() => {
+        navigate(location.pathname, { replace: true, state: {} });
+      }, 0);
+      return; // Early return to prevent further execution
     } else {
-      // Coming from login or profile edit - show mode selection
-      console.log("[MatchList] Coming from login/profile - showing mode selection");
+      // Coming from login or direct navigation - show mode selection
+      console.log("[MatchList] Coming from login/direct navigation - showing mode selection");
       if (savedMode) {
         // Pre-select the saved mode, but still show the selection screen
         console.log("[MatchList] Found saved mode:", savedMode, "- will pre-select but show selection");
@@ -98,8 +103,10 @@ function MatchList() {
 
   useEffect(() => {
     // Don't fetch if mode selection is showing OR if no mode is set
-    if (showModeSelection || !matchingMode) {
-      console.log("[MatchList] Skipping fetch - showModeSelection:", showModeSelection, "matchingMode:", matchingMode);
+    // Also check if we're coming from preferences (skipModeSelection)
+    const skipModeSelection = location.state?.skipModeSelection;
+    if (showModeSelection || (!matchingMode && !skipModeSelection)) {
+      console.log("[MatchList] Skipping fetch - showModeSelection:", showModeSelection, "matchingMode:", matchingMode, "skipModeSelection:", skipModeSelection);
       return;
     }
 
@@ -118,6 +125,12 @@ function MatchList() {
         // Show Gemini loading for at least 3 seconds for better UX
         const minLoadingTime = 3000;
         const startTime = Date.now();
+        
+        // Check if we're coming from preferences - if so, ensure we don't show mode selection
+        const skipModeSelection = location.state?.skipModeSelection;
+        if (skipModeSelection) {
+          setShowModeSelection(false);
+        }
 
         console.log("Fetching matches for user:", userId, "mode:", matchingMode);
         const res = await axios.get(`http://localhost:5001/api/match/${userId}?mode=${matchingMode}`);
@@ -739,7 +752,7 @@ function MatchList() {
                       <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <span>AI-powered compatibility scoring</span>
+                      <span>Gemini AI-powered compatibility scoring</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

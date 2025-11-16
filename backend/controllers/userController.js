@@ -102,9 +102,9 @@ exports.updateProfile = async (req, res) => {
       return res.status(400).json({ error: "Date of birth is required" });
     }
 
-    if (!finalGender || finalGender === "") {
-      return res.status(400).json({ error: "Gender is required" });
-    }
+    // Gender is no longer strictly required - sexuality sliders (physically/sexually/emotionally) replace it
+    // But we still keep gender field for backward compatibility
+    // If physically/sexually/emotionally are provided, they take precedence
 
     // Calculate age from birthday if birthday is provided
     if (finalBirthday) {
@@ -134,6 +134,27 @@ exports.updateProfile = async (req, res) => {
           console.error("[UserController] Error generating images:", imageError);
           // Continue without images - user can upload later
         }
+      }
+    }
+
+    // Calculate sexuality score if physically, sexually, emotionally are provided
+    if (updateData.physically !== undefined && updateData.sexually !== undefined && updateData.emotionally !== undefined) {
+      const sexualityScoreService = require("../services/sexualityScoreService");
+      try {
+        console.log(`[UserController] Calculating sexuality score for user ${userId}...`);
+        const sexualityData = await sexualityScoreService.calculateSexualityScore(
+          updateData.physically,
+          updateData.sexually,
+          updateData.emotionally
+        );
+        updateData.sexualityScore = sexualityData.sexualityScore;
+        updateData.sexualityLabel = sexualityData.label;
+        updateData.sexualityCompatibilityFactors = sexualityData.compatibilityFactors;
+        console.log(`[UserController] ✓ Calculated sexuality score: ${sexualityData.sexualityScore}% (${sexualityData.label})`);
+      } catch (sexualityError) {
+        console.error("[UserController] Error calculating sexuality score:", sexualityError);
+        // Continue without sexuality score - use fallback
+        updateData.sexualityScore = Math.round((updateData.physically + updateData.sexually + updateData.emotionally) / 3);
       }
     }
 

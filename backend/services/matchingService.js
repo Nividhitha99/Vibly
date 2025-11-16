@@ -1,5 +1,6 @@
 const getDb = require("../utils/db");
 const cosineSimilarity = require("../utils/cosine");
+const sexualityScoreService = require("./sexualityScoreService");
 
 exports.getMatches = async (userId, mode = "preferences") => {
   const db = await getDb();
@@ -17,21 +18,24 @@ exports.getMatches = async (userId, mode = "preferences") => {
 
   // Default: preferences-based matching
   const currentEmbedding = allEmbeddings.find(e => e.userId === userId);
+  const currentTaste = allTastes.find(t => t.userId === userId);
+  
+  // If user has no embedding or taste, still return dummy users (for new users)
   if (!currentEmbedding || !currentEmbedding.vector || !Array.isArray(currentEmbedding.vector)) {
     console.log(`[Matching] No embedding found for user ${userId} or embedding vector is missing`);
     console.log(`[Matching] Available embeddings:`, allEmbeddings.map(e => ({ userId: e.userId, hasVector: !!e.vector })));
-    return [];
+    // Don't return empty - continue to add dummy users below
   }
 
-  const currentTaste = allTastes.find(t => t.userId === userId);
   if (!currentTaste) {
     console.log(`[Matching] No taste data found for user ${userId}`);
-    return [];
+    // Don't return empty - continue to add dummy users below
   }
-
-  console.log(`[Matching] Current user has embedding and taste data. Finding matches...`);
-
-  // Get users that current user has already liked or passed
+  
+  // Initialize results array - will be populated with AI matches or just dummy users
+  const results = [];
+  
+  // Get users that current user has already liked or passed (needed for both AI and dummy user filtering)
   const likedUserIds = new Set();
   const passedUserIds = new Set();
   const matchedUserIds = new Set();
@@ -59,10 +63,12 @@ exports.getMatches = async (userId, mode = "preferences") => {
       }
     });
   }
-  
-  console.log(`[Matching] Excluding ${likedUserIds.size} liked users, ${passedUserIds.size} passed users, ${matchedUserIds.size} matched users`);
 
-  const results = [];
+  // If user has embedding and taste, do AI matching
+  if (currentEmbedding && currentEmbedding.vector && Array.isArray(currentEmbedding.vector) && currentTaste) {
+    console.log(`[Matching] Current user has embedding and taste data. Finding matches...`);
+  
+    console.log(`[Matching] Excluding ${likedUserIds.size} liked users, ${passedUserIds.size} passed users, ${matchedUserIds.size} matched users`);
 
   console.log(`[Matching] Checking ${allEmbeddings.length} embeddings for matches...`);
   
@@ -364,35 +370,61 @@ exports.getMatches = async (userId, mode = "preferences") => {
       }
     }
 
-    // -----------------------------------
-    // REGIONAL MATCHING
-    // -----------------------------------
-    if (currentProfile.regionalProfile && otherProfile.regionalProfile) {
-      const currentRegions = new Set((currentProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
-      const otherRegions = new Set((otherProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
-      
-      if (currentRegions.size > 0 && otherRegions.size > 0) {
-        const regionalOverlap = [...currentRegions].filter(r => otherRegions.has(r)).length;
-        const totalUniqueRegions = new Set([...currentRegions, ...otherRegions]).size;
-        const regionalSimilarity = totalUniqueRegions > 0 ? regionalOverlap / totalUniqueRegions : 0;
-        
-        if (regionalSimilarity > 0) {
-          score += regionalSimilarity * 0.10; // Up to 10% boost for regional match
-          console.log(`[Matching] Regional overlap: ${regionalOverlap}/${totalUniqueRegions} (${(regionalSimilarity * 100).toFixed(1)}%)`);
-        }
-        
-        // Check regional compatibility from compatibility factors
-        if (currentProfile.compatibilityFactors?.regionalCompatibility) {
-          const currentRegionalCompat = new Set((currentProfile.compatibilityFactors.regionalCompatibility || []).map(r => r.toLowerCase()));
-          const regionalCompatMatch = [...currentRegionalCompat].filter(r => otherRegions.has(r)).length;
-          
-          if (regionalCompatMatch > 0) {
-            score += (regionalCompatMatch / Math.max(currentRegionalCompat.size, 1)) * 0.06; // Up to 6% boost
-            console.log(`[Matching] Regional compatibility match: ${regionalCompatMatch} regions`);
+          // -----------------------------------
+          // REGIONAL MATCHING
+          // -----------------------------------
+          if (currentProfile.regionalProfile && otherProfile.regionalProfile) {
+            const currentRegions = new Set((currentProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
+            const otherRegions = new Set((otherProfile.regionalProfile.preferredRegions || []).map(r => r.toLowerCase()));
+            
+            if (currentRegions.size > 0 && otherRegions.size > 0) {
+              const regionalOverlap = [...currentRegions].filter(r => otherRegions.has(r)).length;
+              const totalUniqueRegions = new Set([...currentRegions, ...otherRegions]).size;
+              const regionalSimilarity = totalUniqueRegions > 0 ? regionalOverlap / totalUniqueRegions : 0;
+              
+              if (regionalSimilarity > 0) {
+                score += regionalSimilarity * 0.10; // Up to 10% boost for regional match
+                console.log(`[Matching] Regional overlap: ${regionalOverlap}/${totalUniqueRegions} (${(regionalSimilarity * 100).toFixed(1)}%)`);
+              }
+              
+              // Check regional compatibility from compatibility factors
+              if (currentProfile.compatibilityFactors?.regionalCompatibility) {
+                const currentRegionalCompat = new Set((currentProfile.compatibilityFactors.regionalCompatibility || []).map(r => r.toLowerCase()));
+                const regionalCompatMatch = [...currentRegionalCompat].filter(r => otherRegions.has(r)).length;
+                
+                if (regionalCompatMatch > 0) {
+                  score += (regionalCompatMatch / Math.max(currentRegionalCompat.size, 1)) * 0.06; // Up to 6% boost
+                  console.log(`[Matching] Regional compatibility match: ${regionalCompatMatch} regions`);
+                }
+              }
+            }
           }
-        }
-      }
-    }
+
+          // -----------------------------------
+          // SEXUALITY SCORE COMPATIBILITY
+          // -----------------------------------
+          if (currentUser.sexualityScore !== undefined && otherUser.sexualityScore !== undefined) {
+            const sexualityCompat = sexualityScoreService.calculateSexualityCompatibility(
+              {
+                sexualityScore: currentUser.sexualityScore,
+                compatibilityFactors: currentUser.sexualityCompatibilityFactors
+              },
+              {
+                sexualityScore: otherUser.sexualityScore,
+                compatibilityFactors: otherUser.sexualityCompatibilityFactors
+              }
+            );
+            
+            // Boost score based on sexuality compatibility (up to 15%)
+            if (sexualityCompat > 0.7) {
+              score += (sexualityCompat - 0.7) * 0.5; // Up to 15% boost for high compatibility
+              console.log(`[Matching] Sexuality compatibility: ${(sexualityCompat * 100).toFixed(1)}%`);
+            } else if (sexualityCompat < 0.3) {
+              // Penalty for very low compatibility
+              score *= 0.9; // 10% penalty
+              console.log(`[Matching] Low sexuality compatibility: ${(sexualityCompat * 100).toFixed(1)}% - applying penalty`);
+            }
+          }
 
     // -----------------------------------
     // LANGUAGE PREFERENCE FILTER
@@ -574,94 +606,194 @@ exports.getMatches = async (userId, mode = "preferences") => {
       console.log(`[Matching] Skipping ${otherUser.name} - score too low: ${score.toFixed(4)}`);
     }
   }
+  } // End of AI matching block - now continue to add dummy users
 
-  // Filter matches by 60% threshold (score >= 0.6)
-  const filteredResults = results.filter(match => {
-    const score = match.score || 0;
-    return score >= 0.6;
-  });
+  // Filter matches by 60% threshold (score >= 0.6) - only if we have results
+  let filteredResults = [];
+  let sorted = [];
+  let uniqueResults = [];
+  let finalResults = [];
   
-  console.log(`[Matching] Filtered ${results.length} matches to ${filteredResults.length} with 60%+ compatibility`);
-  
-  // Sort highest score first
-  const sorted = filteredResults.sort((a, b) => {
-    const scoreA = a.score || 0;
-    const scoreB = b.score || 0;
-    return scoreB - scoreA; // High to low
-  });
-  
-  // Remove duplicates by userId (in case same user appears multiple times)
-  // Use Map to keep the highest scoring version of each user
-  const uniqueMap = new Map();
-  const seenUserIds = new Set();
-  
-  for (const match of sorted) {
-    // Skip if no userId
-    if (!match || !match.userId) {
-      console.log(`[Matching] Skipping match without userId:`, match);
-      continue;
-    }
+  if (results.length > 0) {
+    filteredResults = results.filter(match => {
+      const score = match.score || 0;
+      return score >= 0.6;
+    });
     
-    // Normalize userId (trim whitespace, convert to string)
-    const normalizedUserId = String(match.userId).trim();
+    console.log(`[Matching] Filtered ${results.length} matches to ${filteredResults.length} with 60%+ compatibility`);
     
-    // If we've seen this userId, keep the one with higher score
-    if (seenUserIds.has(normalizedUserId)) {
-      const existing = uniqueMap.get(normalizedUserId);
-      if (existing && match.score > existing.score) {
-        console.log(`[Matching] Replacing duplicate ${normalizedUserId} (${match.name}) with higher score: ${match.score.toFixed(4)} > ${existing.score.toFixed(4)}`);
-        uniqueMap.set(normalizedUserId, match);
+    // Sort highest score first
+    sorted = filteredResults.sort((a, b) => {
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      return scoreB - scoreA; // High to low
+    });
+    
+    // Remove duplicates by userId (in case same user appears multiple times)
+    // Use Map to keep the highest scoring version of each user
+    const uniqueMap = new Map();
+    const seenUserIds = new Set();
+    
+    for (const match of sorted) {
+      // Skip if no userId
+      if (!match || !match.userId) {
+        console.log(`[Matching] Skipping match without userId:`, match);
+        continue;
+      }
+      
+      // Normalize userId (trim whitespace, convert to string)
+      const normalizedUserId = String(match.userId).trim();
+      
+      // If we've seen this userId, keep the one with higher score
+      if (seenUserIds.has(normalizedUserId)) {
+        const existing = uniqueMap.get(normalizedUserId);
+        if (existing && match.score > existing.score) {
+          console.log(`[Matching] Replacing duplicate ${normalizedUserId} (${match.name}) with higher score: ${match.score.toFixed(4)} > ${existing.score.toFixed(4)}`);
+          uniqueMap.set(normalizedUserId, match);
+        } else {
+          console.log(`[Matching] Skipping duplicate ${normalizedUserId} (${match.name || 'Unknown'}) - lower or equal score`);
+        }
       } else {
-        console.log(`[Matching] Skipping duplicate ${normalizedUserId} (${match.name || 'Unknown'}) - lower or equal score`);
+        seenUserIds.add(normalizedUserId);
+        uniqueMap.set(normalizedUserId, match);
       }
-    } else {
-      seenUserIds.add(normalizedUserId);
-      uniqueMap.set(normalizedUserId, match);
     }
-  }
-  
-  const uniqueResults = Array.from(uniqueMap.values());
-  
-  // Final safety check - filter by userId one more time (CRITICAL - ensure no duplicates)
-  const finalResults = [];
-  const finalSeen = new Set();
-  for (const match of uniqueResults) {
-    const id = String(match.userId).trim();
-    if (!finalSeen.has(id)) {
-      finalSeen.add(id);
-      finalResults.push(match);
-    } else {
-      console.error(`[Matching] ❌ CRITICAL: Final filter removing duplicate ${id} (${match.name || 'Unknown'}) - this should not happen!`);
-    }
-  }
-  
-  // EXTRA VERIFICATION: Check for any remaining duplicates
-  const finalUserIds = finalResults.map(m => String(m.userId).trim());
-  const duplicateCheck = finalUserIds.filter((id, index) => finalUserIds.indexOf(id) !== index);
-  if (duplicateCheck.length > 0) {
-    console.error(`[Matching] ❌ CRITICAL ERROR: Found ${duplicateCheck.length} duplicate userIds in final results:`, duplicateCheck);
-    // Remove duplicates - keep only the first occurrence
-    const trulyUnique = [];
-    const trulySeen = new Set();
-    for (const match of finalResults) {
+    
+    uniqueResults = Array.from(uniqueMap.values());
+    
+    // Final safety check - filter by userId one more time (CRITICAL - ensure no duplicates)
+    const finalSeen = new Set();
+    for (const match of uniqueResults) {
       const id = String(match.userId).trim();
-      if (!trulySeen.has(id)) {
-        trulySeen.add(id);
-        trulyUnique.push(match);
+      if (!finalSeen.has(id)) {
+        finalSeen.add(id);
+        finalResults.push(match);
+      } else {
+        console.error(`[Matching] ❌ CRITICAL: Final filter removing duplicate ${id} (${match.name || 'Unknown'}) - this should not happen!`);
       }
     }
-    console.error(`[Matching] Removed ${finalResults.length - trulyUnique.length} additional duplicates`);
-    return trulyUnique;
+    
+    // EXTRA VERIFICATION: Check for any remaining duplicates
+    const finalUserIds = finalResults.map(m => String(m.userId).trim());
+    const duplicateCheck = finalUserIds.filter((id, index) => finalUserIds.indexOf(id) !== index);
+    if (duplicateCheck.length > 0) {
+      console.error(`[Matching] ❌ CRITICAL ERROR: Found ${duplicateCheck.length} duplicate userIds in final results:`, duplicateCheck);
+      // Remove duplicates - keep only the first occurrence
+      const trulyUnique = [];
+      const trulySeen = new Set();
+      for (const match of finalResults) {
+        const id = String(match.userId).trim();
+        if (!trulySeen.has(id)) {
+          trulySeen.add(id);
+          trulyUnique.push(match);
+        }
+      }
+      console.error(`[Matching] Removed ${finalResults.length - trulyUnique.length} additional duplicates`);
+      finalResults = trulyUnique;
+    }
+    
+    // Ensure final results are sorted high to low
+    finalResults.sort((a, b) => {
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      return scoreB - scoreA; // High to low
+    });
+    
+    console.log(`[Matching] Found ${sorted.length} matches, ${uniqueResults.length} after Map dedup, ${finalResults.length} final unique for user ${userId}`);
+  } else {
+    console.log(`[Matching] No AI matches found for user ${userId} - will add dummy users`);
   }
   
-  // Ensure final results are sorted high to low
-  finalResults.sort((a, b) => {
-    const scoreA = a.score || 0;
-    const scoreB = b.score || 0;
-    return scoreB - scoreA; // High to low
-  });
+  // PRIORITIZE NIVI - Always add Nivi as first match for new users
+  const NIVI_USER_ID = "2bc81148-17cc-45cf-87c4-be9b55d8810a";
+  const niviUser = allUsers.find(u => u.id === NIVI_USER_ID);
+  const hasNiviInResults = finalResults.some(m => m.userId === NIVI_USER_ID);
   
-  console.log(`[Matching] Found ${sorted.length} matches, ${uniqueResults.length} after Map dedup, ${finalResults.length} final unique for user ${userId}`);
+  if (niviUser && !hasNiviInResults && userId !== NIVI_USER_ID) {
+    // Check if user has already interacted with Nivi
+    if (!likedUserIds.has(NIVI_USER_ID) && !passedUserIds.has(NIVI_USER_ID) && !matchedUserIds.has(NIVI_USER_ID)) {
+      // Check age compatibility
+      const currentUser = allUsers.find(u => u.id === userId);
+      let shouldAddNivi = true;
+      
+      if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+        if (niviUser.age < currentUser.ageRangeMin || niviUser.age > currentUser.ageRangeMax) {
+          shouldAddNivi = false;
+        }
+      }
+      
+      if (shouldAddNivi) {
+        // Add Nivi at the beginning with high score
+        finalResults.unshift({
+          userId: NIVI_USER_ID,
+          name: niviUser.name || 'Nivi',
+          email: niviUser.email || '',
+          profileImages: niviUser.profileImages || null,
+          imageUrl: niviUser.imageUrl || null,
+          score: 0.85 // High score to ensure Nivi appears first
+        });
+        console.log(`[Matching] ✅ Added Nivi as first match for user ${userId}`);
+      }
+    }
+  }
+  
+  // Add dummy users if we have fewer than 5 matches (for testing)
+  if (finalResults.length < 5) {
+    console.log(`[Matching] Only ${finalResults.length} matches found, adding dummy users to ensure minimum 5 matches...`);
+    const dummyUserEmails = [
+      "alex.dummy@vibly.com",
+      "emma.dummy@vibly.com",
+      "jordan.dummy@vibly.com",
+      "sam.dummy@vibly.com",
+      "riley.dummy@vibly.com"
+    ];
+    
+    const existingDummyIds = new Set(finalResults.map(m => m.userId));
+    const currentUser = allUsers.find(u => u.id === userId);
+    
+    for (const dummyEmail of dummyUserEmails) {
+      if (finalResults.length >= 5) break; // Stop when we have 5 matches
+      
+      const dummyUser = allUsers.find(u => u.email === dummyEmail);
+      if (!dummyUser || existingDummyIds.has(dummyUser.id)) continue;
+      
+      // Check if user has already interacted with this dummy user
+      if (likedUserIds.has(dummyUser.id) || passedUserIds.has(dummyUser.id) || matchedUserIds.has(dummyUser.id)) {
+        continue;
+      }
+      
+      // Check age compatibility
+      if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+        if (dummyUser.age < currentUser.ageRangeMin || dummyUser.age > currentUser.ageRangeMax) {
+          continue;
+        }
+      }
+      
+      // Add dummy user with a base score of 0.65 (above 60% threshold)
+      finalResults.push({
+        userId: dummyUser.id,
+        name: dummyUser.name || 'Unknown',
+        email: dummyUser.email || '',
+        profileImages: dummyUser.profileImages || null,
+        imageUrl: dummyUser.imageUrl || null,
+        score: 0.65 // Base score for dummy users
+      });
+      
+      existingDummyIds.add(dummyUser.id);
+      console.log(`[Matching] ✅ Added dummy user: ${dummyUser.name} (score: 65%)`);
+    }
+    
+    // Re-sort after adding dummy users (but keep Nivi first if present)
+    finalResults.sort((a, b) => {
+      // Keep Nivi first
+      if (a.userId === NIVI_USER_ID) return -1;
+      if (b.userId === NIVI_USER_ID) return 1;
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      return scoreB - scoreA;
+    });
+  }
+  
   if (finalResults.length > 0) {
     console.log(`[Matching] Top match: ${finalResults[0].name} with score ${(finalResults[0].score * 100).toFixed(1)}%`);
     console.log(`[Matching] All match IDs:`, finalResults.map(m => `${m.name} (${(m.score * 100).toFixed(1)}%)`));
@@ -839,6 +971,24 @@ exports.getLocationBasedMatches = async (userId) => {
     // Same city = 0.8, same region = 0.6, different region = 0.4
     let score = 0.7; // Base score for location-based matches (higher to ensure they pass 60% threshold)
     
+    // Add sexuality score compatibility boost for location-based matches too
+    if (currentUser.sexualityScore !== undefined && otherUser.sexualityScore !== undefined) {
+      const sexualityCompat = sexualityScoreService.calculateSexualityCompatibility(
+        {
+          sexualityScore: currentUser.sexualityScore,
+          compatibilityFactors: currentUser.sexualityCompatibilityFactors
+        },
+        {
+          sexualityScore: otherUser.sexualityScore,
+          compatibilityFactors: otherUser.sexualityCompatibilityFactors
+        }
+      );
+      
+      if (sexualityCompat > 0.7) {
+        score += (sexualityCompat - 0.7) * 0.3; // Up to 9% boost for high compatibility
+      }
+    }
+    
     if (currentUser.city && otherUser.city) {
       if (currentUser.city.toLowerCase() === otherUser.city.toLowerCase()) {
         score = 0.85;
@@ -941,7 +1091,143 @@ exports.getLocationBasedMatches = async (userId) => {
         trulyUnique.push(match);
       }
     }
-    return trulyUnique;
+    finalResults = trulyUnique;
+  }
+  
+  // PRIORITIZE NIVI - Always add Nivi as first match for new users (location-based)
+  const NIVI_USER_ID = "2bc81148-17cc-45cf-87c4-be9b55d8810a";
+  const niviUser = allUsers.find(u => u.id === NIVI_USER_ID);
+  const hasNiviInResults = finalResults.some(m => m.userId === NIVI_USER_ID);
+  
+  if (niviUser && !hasNiviInResults && userId !== NIVI_USER_ID) {
+    // Get users that current user has already liked or passed (for location-based matching)
+    const likedUserIdsLoc = new Set();
+    const passedUserIdsLoc = new Set();
+    const matchedUserIdsLoc = new Set();
+    
+    if (db.data.matches) {
+      db.data.matches.forEach(m => {
+        if (m.fromUser === userId) {
+          if (m.status === "confirmed") {
+            matchedUserIdsLoc.add(m.toUser);
+          } else {
+            likedUserIdsLoc.add(m.toUser);
+          }
+        }
+        if (m.toUser === userId && m.status === "confirmed") {
+          matchedUserIdsLoc.add(m.fromUser);
+        }
+      });
+    }
+    
+    if (db.data.passes) {
+      db.data.passes.forEach(p => {
+        if (p.fromUser === userId) {
+          passedUserIdsLoc.add(p.toUser);
+        }
+      });
+    }
+    
+    // Check if user has already interacted with Nivi
+    if (!likedUserIdsLoc.has(NIVI_USER_ID) && !passedUserIdsLoc.has(NIVI_USER_ID) && !matchedUserIdsLoc.has(NIVI_USER_ID)) {
+      // Check age compatibility
+      let shouldAddNivi = true;
+      
+      if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+        if (niviUser.age < currentUser.ageRangeMin || niviUser.age > currentUser.ageRangeMax) {
+          shouldAddNivi = false;
+        }
+      }
+      
+      if (shouldAddNivi) {
+        // Add Nivi at the beginning with high score
+        finalResults.unshift({
+          userId: NIVI_USER_ID,
+          name: niviUser.name || 'Nivi',
+          email: niviUser.email || '',
+          profileImages: niviUser.profileImages || null,
+          imageUrl: niviUser.imageUrl || null,
+          score: 0.85 // High score to ensure Nivi appears first
+        });
+        console.log(`[Matching] ✅ Added Nivi as first match for user ${userId} (location-based)`);
+      }
+    }
+  }
+  
+  // Add dummy users if we have fewer than 5 matches (for testing) - Location-based
+  if (finalResults.length < 5) {
+    console.log(`[Matching] Only ${finalResults.length} location-based matches found, adding dummy users to ensure minimum 5 matches...`);
+    const dummyUserEmails = [
+      "alex.dummy@vibly.com",
+      "emma.dummy@vibly.com",
+      "jordan.dummy@vibly.com",
+      "sam.dummy@vibly.com",
+      "riley.dummy@vibly.com"
+    ];
+    
+    const existingDummyIds = new Set(finalResults.map(m => m.userId));
+    
+    // Get excluded users (liked, passed, matched)
+    const excludedIds = new Set();
+    if (db.data.matches) {
+      db.data.matches.forEach(m => {
+        if (m.fromUser === userId) {
+          if (m.status === "confirmed") excludedIds.add(m.toUser);
+          else excludedIds.add(m.toUser);
+        }
+        if (m.toUser === userId && m.status === "confirmed") excludedIds.add(m.fromUser);
+      });
+    }
+    if (db.data.passes) {
+      db.data.passes.forEach(p => {
+        if (p.fromUser === userId) excludedIds.add(p.toUser);
+      });
+    }
+    
+    for (const dummyEmail of dummyUserEmails) {
+      if (finalResults.length >= 5) break;
+      
+      const dummyUser = allUsers.find(u => u.email === dummyEmail);
+      if (!dummyUser || existingDummyIds.has(dummyUser.id) || excludedIds.has(dummyUser.id)) continue;
+      
+      // Check age compatibility
+      if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+        if (dummyUser.age < currentUser.ageRangeMin || dummyUser.age > currentUser.ageRangeMax) {
+          continue;
+        }
+      }
+      
+      // Check gender compatibility
+      if (currentUser && currentUser.lookingFor) {
+        const lookingFor = Array.isArray(currentUser.lookingFor) ? currentUser.lookingFor : [currentUser.lookingFor];
+        if (!lookingFor.includes(dummyUser.gender) && !lookingFor.includes("non-binary")) {
+          continue;
+        }
+      }
+      
+      // Add dummy user with a base score of 0.65
+      finalResults.push({
+        userId: dummyUser.id,
+        name: dummyUser.name || 'Unknown',
+        email: dummyUser.email || '',
+        profileImages: dummyUser.profileImages || null,
+        imageUrl: dummyUser.imageUrl || null,
+        score: 0.65
+      });
+      
+      existingDummyIds.add(dummyUser.id);
+      console.log(`[Matching] ✅ Added dummy user: ${dummyUser.name} (score: 65%)`);
+    }
+    
+    // Re-sort after adding dummy users (but keep Nivi first if present)
+    finalResults.sort((a, b) => {
+      // Keep Nivi first
+      if (a.userId === NIVI_USER_ID) return -1;
+      if (b.userId === NIVI_USER_ID) return 1;
+      const scoreA = a.score || 0;
+      const scoreB = b.score || 0;
+      return scoreB - scoreA;
+    });
   }
   
   return finalResults;

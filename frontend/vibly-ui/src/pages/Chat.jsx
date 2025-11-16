@@ -28,6 +28,50 @@ function Chat() {
 
   const userId = localStorage.getItem("userId");
 
+  // Fetch conversation starters for new chats - MOVED BEFORE useEffect
+  const fetchConversationStarters = React.useCallback(async () => {
+    if (!selectedConversation || !userId) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      const starters = res.data.starters || [];
+      console.log("[Chat] Fetched conversation starters:", starters);
+      setConversationStarters(starters);
+      // Auto-open AI helper if we have starters
+      if (starters.length > 0) {
+        setShowAIHelper(true);
+      }
+    } catch (err) {
+      console.error("Error fetching conversation starters:", err);
+      setConversationStarters([]);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
+  // Analyze chat and get AI suggestions - MOVED BEFORE useEffect
+  const analyzeChat = React.useCallback(async (msgs) => {
+    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
+    
+    setLoadingAI(true);
+    try {
+      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
+        messages: msgs,
+        userId,
+        matchUserId: selectedConversation.userId
+      });
+      setAiSuggestions(res.data.analysis);
+    } catch (err) {
+      console.error("Error analyzing chat:", err);
+    } finally {
+      setLoadingAI(false);
+    }
+  }, [selectedConversation, userId]);
+
   // Load conversations list
   useEffect(() => {
     if (!userId) {
@@ -122,43 +166,6 @@ function Chat() {
     };
   }, [selectedConversation, userId, initialMessage, fetchConversationStarters, analyzeChat]);
 
-  // Fetch conversation starters for new chats
-  const fetchConversationStarters = React.useCallback(async () => {
-    if (!selectedConversation || !userId) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/conversation-starters", {
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setConversationStarters(res.data.starters || []);
-    } catch (err) {
-      console.error("Error fetching conversation starters:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
-
-  // Analyze chat and get AI suggestions
-  const analyzeChat = React.useCallback(async (msgs) => {
-    if (!selectedConversation || !userId || !msgs || msgs.length === 0) return;
-    
-    setLoadingAI(true);
-    try {
-      const res = await axios.post("http://localhost:5001/api/ai-chat/analyze", {
-        messages: msgs,
-        userId,
-        matchUserId: selectedConversation.userId
-      });
-      setAiSuggestions(res.data.analysis);
-    } catch (err) {
-      console.error("Error analyzing chat:", err);
-    } finally {
-      setLoadingAI(false);
-    }
-  }, [selectedConversation, userId]);
-
   // Get flirty suggestions
   const getFlirtySuggestions = async () => {
     if (!newMessage.trim()) return;
@@ -183,18 +190,22 @@ function Chat() {
     if (!selectedConversation || !userId || messages.length === 0) return;
     
     setLoadingAI(true);
+    setConflictResolution(null); // Clear previous resolution
     try {
       const res = await axios.post("http://localhost:5001/api/ai-chat/conflict-resolution", {
         messages,
         userId,
         matchUserId: selectedConversation.userId
       });
-      setConflictResolution(res.data.resolution);
-      if (res.data.resolution?.hasConflict) {
-        setShowAIHelper(true);
-      }
+      const resolution = res.data.resolution || res.data;
+      console.log("[Chat] Conflict resolution result:", resolution);
+      setConflictResolution(resolution);
+      // Always show AI helper when conflict resolution is requested
+      setShowAIHelper(true);
     } catch (err) {
       console.error("Error getting conflict resolution:", err);
+      setConflictResolution({ hasConflict: false, message: "Error analyzing conflict. Please try again." });
+      setShowAIHelper(true);
     } finally {
       setLoadingAI(false);
     }
@@ -340,43 +351,32 @@ function Chat() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowAIHelper(!showAIHelper)}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
-                  title="AI Helper"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </button>
                 {messages.length > 0 && (
                   <button
                     onClick={getConflictResolution}
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
-                    title="Check for conflicts"
+                    className="p-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                    title="Resolve Conflicts"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+                    <span className="text-xl">⚔️</span>
                   </button>
                 )}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* AI Helper Panel */}
+              {/* AI Helper Panel - Moved above messages */}
               {showAIHelper && (
-                <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 backdrop-blur-xl rounded-xl p-4 border border-purple-400/30 mb-4">
+                <div className="bg-gradient-to-r from-purple-500/60 to-indigo-500/60 backdrop-blur-xl rounded-xl p-4 border-2 border-purple-300/80 mb-4 shadow-2xl shadow-purple-500/30">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-white font-semibold flex items-center gap-2">
-                      <svg className="w-5 h-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                      <svg className="w-6 h-6 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                       AI Helper
                     </h3>
                     <button
                       onClick={() => setShowAIHelper(false)}
-                      className="text-white/60 hover:text-white"
+                      className="text-white hover:text-yellow-300 text-xl font-bold transition-colors"
                     >
                       ×
                     </button>
@@ -456,23 +456,38 @@ function Chat() {
                   )}
 
                   {/* Conflict Resolution */}
-                  {conflictResolution && conflictResolution.hasConflict && (
-                    <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3">
-                      <p className="text-red-200 text-sm font-semibold mb-2">⚠️ Potential Conflict Detected</p>
-                      <p className="text-white/80 text-sm mb-2">{conflictResolution.issue}</p>
-                      {conflictResolution.suggestedResponse && (
-                        <button
-                          onClick={() => {
-                            setNewMessage(conflictResolution.suggestedResponse);
-                            setShowAIHelper(false);
-                          }}
-                          className="w-full text-left p-2 bg-white/10 hover:bg-white/20 rounded text-white text-sm mb-2 transition-all duration-300"
-                        >
-                          💬 Suggested: "{conflictResolution.suggestedResponse}"
-                        </button>
-                      )}
-                      {conflictResolution.advice && (
-                        <p className="text-white/70 text-xs italic">{conflictResolution.advice}</p>
+                  {conflictResolution && (
+                    <div className={`${conflictResolution.hasConflict ? 'bg-gradient-to-r from-red-500/70 to-orange-500/70 border-2 border-red-300/90' : 'bg-gradient-to-r from-green-500/70 to-emerald-500/70 border-2 border-green-300/90'} rounded-lg p-4 shadow-2xl ${conflictResolution.hasConflict ? 'shadow-red-500/40' : 'shadow-green-500/40'}`}>
+                      {conflictResolution.hasConflict ? (
+                        <>
+                          <p className="text-white text-base font-bold mb-2 flex items-center gap-2">
+                            <span className="text-2xl">⚔️</span>
+                            <span>Potential Conflict Detected</span>
+                          </p>
+                          <p className="text-white text-sm mb-3 font-medium">{conflictResolution.issue || conflictResolution.message || "A potential conflict was detected in your conversation."}</p>
+                          {conflictResolution.suggestedResponse && (
+                            <button
+                              onClick={() => {
+                                setNewMessage(conflictResolution.suggestedResponse);
+                                setShowAIHelper(false);
+                              }}
+                              className="w-full text-left p-3 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm mb-2 transition-all duration-300 border border-white/30 hover:border-white/50 font-semibold"
+                            >
+                              💬 Suggested: "{conflictResolution.suggestedResponse}"
+                            </button>
+                          )}
+                          {conflictResolution.advice && (
+                            <p className="text-white/90 text-sm italic">{conflictResolution.advice}</p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-white text-base font-bold mb-2 flex items-center gap-2">
+                            <span className="text-2xl">✅</span>
+                            <span>No Conflicts Detected</span>
+                          </p>
+                          <p className="text-white text-sm mb-3 font-medium">{conflictResolution.message || "Your conversation looks healthy!"}</p>
+                        </>
                       )}
                     </div>
                   )}
@@ -533,26 +548,17 @@ function Chat() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 border-t border-white/20 bg-white/5 backdrop-blur-sm">
-              {/* AI Quick Actions */}
-              {messages.length > 0 && newMessage.trim() && (
-                <div className="flex gap-2 mb-2">
-                  <button
-                    onClick={getFlirtySuggestions}
-                    className="px-3 py-1.5 bg-pink-500/20 hover:bg-pink-500/30 rounded-lg text-white text-xs transition-all duration-300 border border-pink-400/30 flex items-center gap-1"
-                    title="Get flirty variations"
-                  >
-                    💕 Flirty
-                  </button>
-                  <button
-                    onClick={() => analyzeChat(messages)}
-                    className="px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg text-white text-xs transition-all duration-300 border border-purple-400/30 flex items-center gap-1"
-                    title="Get AI suggestions"
-                  >
-                    ✨ AI Help
-                  </button>
-                </div>
-              )}
+            <div className="p-4 border-t border-white/20 bg-white/5 backdrop-blur-sm relative">
+              {/* Floating AI Helper Button */}
+              <button
+                onClick={() => setShowAIHelper(!showAIHelper)}
+                className="absolute -top-12 right-4 w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 rounded-full text-white shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 flex items-center justify-center z-10 animate-float"
+                title="AI Helper"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </button>
               
               <div className="flex gap-2">
                 <input
@@ -573,6 +579,21 @@ function Chat() {
                   <span>Send</span>
                 </button>
               </div>
+              
+              {/* Add floating animation style */}
+              <style>{`
+                @keyframes float {
+                  0%, 100% {
+                    transform: translateY(0px);
+                  }
+                  50% {
+                    transform: translateY(-10px);
+                  }
+                }
+                .animate-float {
+                  animation: float 3s ease-in-out infinite;
+                }
+              `}</style>
             </div>
           </>
         ) : (

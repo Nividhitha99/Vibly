@@ -140,18 +140,56 @@ export default function JamSession() {
         });
       });
 
+      // Listen for playback control from other participants
+      socketRef.current.on("playbackControl", (data) => {
+        try {
+          console.log("[JamSession] Received playbackControl from socket:", data);
+          if (data.isPlaying !== undefined) {
+            setIsPlaying(data.isPlaying);
+            // If video ID is provided and different, update it
+            if (data.youtubeVideoId && data.youtubeVideoId !== youtubeVideoId) {
+              console.log("[JamSession] Updating YouTube video ID from playbackControl:", data.youtubeVideoId);
+              setYoutubeVideoId(data.youtubeVideoId);
+            }
+            // Control YouTube player if available
+            if (youtubeVideoId && youtubePlayerRef.current) {
+              try {
+                // Use a small delay to ensure iframe is ready
+                setTimeout(() => {
+                  if (youtubePlayerRef.current && youtubePlayerRef.current.contentWindow) {
+                    if (data.isPlaying) {
+                      youtubePlayerRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                    } else {
+                      youtubePlayerRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                    }
+                  }
+                }, 100);
+              } catch (err) {
+                console.error("Error controlling YouTube player via postMessage:", err);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error handling playback control:", err);
+        }
+      });
+
       // Listen for track changes from other participants
       socketRef.current.on("trackChange", async (data) => {
         try {
           console.log("[JamSession] Received trackChange from socket:", data);
           setCurrentTrack(data.track);
-          setIsPlaying(data.isPlaying);
+          setIsPlaying(data.isPlaying || false);
           
           // Handle YouTube video if provided
           if (data.youtubeVideoId) {
             console.log("[JamSession] Setting YouTube video ID from socket:", data.youtubeVideoId);
             setYoutubeVideoId(data.youtubeVideoId);
             setIsAudioLoading(false);
+            // Force iframe reload by updating key
+            if (data.isPlaying) {
+              setIsPlaying(true);
+            }
           } else if (data.track) {
             // If no YouTube video ID provided, try to fetch it
             try {
@@ -332,6 +370,7 @@ export default function JamSession() {
         
         // Send notification to the other person to join the jam session (only once)
         // Skip if this is an accepted invite (they're joining, not initiating)
+        // Also check if notification was already sent in this session
         if (!notificationSentRef.current && !accepted) {
           notificationSentRef.current = true;
           try {
@@ -340,8 +379,10 @@ export default function JamSession() {
               toUserId: matchId,
               roomId: jamRoomId
             });
+            console.log("[JamSession] Notification sent to", matchId);
           } catch (err) {
             console.error("Error sending jam session notification:", err);
+            notificationSentRef.current = false; // Reset on error so it can retry
           }
         }
       } catch (err) {
@@ -565,22 +606,39 @@ export default function JamSession() {
     
     // Control YouTube player if available
     if (youtubeVideoId && youtubePlayerRef.current) {
-      // YouTube iframe API would be needed for programmatic control
-      // For now, users can use YouTube's built-in controls
-      // The iframe will autoplay if isPlaying is true
-      if (newPlayingState) {
-        // Reload iframe with autoplay
-        setYoutubeVideoId(youtubeVideoId); // Trigger re-render with autoplay
+      try {
+        if (newPlayingState) {
+          youtubePlayerRef.current.playVideo();
+        } else {
+          youtubePlayerRef.current.pauseVideo();
+        }
+      } catch (err) {
+        console.error("Error controlling YouTube player:", err);
       }
     }
     
-    // Emit playback control via socket (don't let errors here disconnect socket)
+    // Control audio preview if available
+    if (audioRef.current && currentTrack) {
+      try {
+        if (newPlayingState) {
+          await audioRef.current.play();
+        } else {
+          audioRef.current.pause();
+        }
+      } catch (err) {
+        console.error("Error controlling audio:", err);
+      }
+    }
+    
+    // Emit playback control via socket to sync with other users
     if (socketRef.current && socketRef.current.connected && roomId) {
       try {
         socketRef.current.emit("playbackControl", {
           roomId: roomId,
           isPlaying: newPlayingState,
+          youtubeVideoId: youtubeVideoId // Include video ID so other users know which video is playing
         });
+        console.log("[JamSession] Emitted playbackControl:", newPlayingState, "videoId:", youtubeVideoId);
       } catch (socketErr) {
         console.error("Error emitting playback control:", socketErr);
         // Don't let socket errors affect playback
@@ -933,7 +991,7 @@ export default function JamSession() {
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
-              {matches.length > 0 && (
+              {matches.length > 0 && participants < 2 && !accepted && (
                 <button
                   onClick={() => setShowInviteModal(true)}
                   className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
@@ -1064,13 +1122,25 @@ export default function JamSession() {
                           ref={youtubePlayerRef}
                           width="100%"
                           height="100%"
-                          src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=${isPlaying ? 1 : 0}&controls=1&rel=0&enablejsapi=1`}
+                          src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=${isPlaying ? 1 : 0}&controls=1&rel=0&enablejsapi=1&origin=${window.location.origin}&mute=0`}
                           frameBorder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                           className="absolute top-0 left-0 w-full h-full rounded-lg"
-                          title={currentTrack.name}
-                          key={youtubeVideoId}
+                          title={currentTrack?.name || "YouTube Video"}
+                          key={`${youtubeVideoId}-${Date.now()}`}
+                          onLoad={() => {
+                            // When iframe loads, sync play state
+                            if (isPlaying && youtubePlayerRef.current && youtubePlayerRef.current.contentWindow) {
+                              setTimeout(() => {
+                                try {
+                                  youtubePlayerRef.current.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                                } catch (err) {
+                                  console.error("Error playing video on load:", err);
+                                }
+                              }, 500);
+                            }
+                          }}
                         />
                       </div>
                     </div>

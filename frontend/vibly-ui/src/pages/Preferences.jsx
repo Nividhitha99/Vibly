@@ -98,12 +98,19 @@ function Preferences() {
       await new Promise(resolve => setTimeout(resolve, 150));
 
       // Save preferences
-      await axios.post("http://localhost:5001/api/user/preferences", {
+      const response = await axios.post("http://localhost:5001/api/user/preferences", {
         userId,
         movies,
         shows: tv, // Map tv to shows for backend
         music,
       });
+      
+      console.log("[Preferences] Save response:", response.data);
+      
+      // Check if save was successful
+      if (!response.data || response.data.error) {
+        throw new Error(response.data?.error || "Failed to save preferences");
+      }
 
       // Wait for Gemini to process (embedding generation and matching)
       // Minimum 8 seconds wait time to show the loading screen properly

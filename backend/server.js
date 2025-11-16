@@ -39,13 +39,7 @@ io.on("connection", (socket) => {
 
   socket.on("sendMessage", async (data) => {
     const roomId = data.room || data.roomId;
-    if (roomId) {
-      console.log(`Broadcasting message to room ${roomId}:`, data.message);
-      // Broadcast to all users in the room (including sender for confirmation)
-      io.to(roomId).emit("receiveMessage", data);
-      console.log(`Message broadcasted to room ${roomId}`);
-    } else {
-      console.warn("sendMessage received without roomId:", data);
+    
     if (!roomId) {
       console.error("[BACKEND] No room ID provided in sendMessage");
       return;

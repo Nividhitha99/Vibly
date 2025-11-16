@@ -70,6 +70,9 @@ function Profile() {
           name: userRes.data.name || "",
           age: userRes.data.age || "",
           gender: userRes.data.gender || "",
+          physically: userRes.data.physically !== undefined ? userRes.data.physically : 50,
+          sexually: userRes.data.sexually !== undefined ? userRes.data.sexually : 50,
+          emotionally: userRes.data.emotionally !== undefined ? userRes.data.emotionally : 50,
           birthday: userRes.data.birthday || "",
           location: userRes.data.location || "",
           city: userRes.data.city || "",
@@ -155,11 +158,10 @@ function Profile() {
       return;
     }
     
-    if (!finalGender || finalGender === "") {
-      setError("Please select your gender. This field is required.");
-      setTimeout(() => setError(""), 5000);
-      return;
-    }
+    // Validate sexuality sliders are set (default to 50 if not set)
+    if (formData.physically === undefined) formData.physically = 50;
+    if (formData.sexually === undefined) formData.sexually = 50;
+    if (formData.emotionally === undefined) formData.emotionally = 50;
 
     setSaving(true);
 
@@ -170,6 +172,9 @@ function Profile() {
         name: formData.name,
         age: formData.age,
         gender: formData.gender,
+        physically: formData.physically !== undefined ? formData.physically : 50,
+        sexually: formData.sexually !== undefined ? formData.sexually : 50,
+        emotionally: formData.emotionally !== undefined ? formData.emotionally : 50,
         birthday: formData.birthday,
         location: formData.location,
         city: formData.city,
@@ -216,7 +221,7 @@ function Profile() {
             "Your profile is complete! Would you like to view your matches?"
           );
           if (goToMatches) {
-            navigate("/match-list");
+            navigate("/match-list", { state: { skipModeSelection: true } });
           }
         }
         setSuccess("");
@@ -534,20 +539,64 @@ function Profile() {
                         placeholder="Your age"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-white/90 mb-2">Gender *</label>
-                      <select
-                        required
-                        value={formData.gender}
-                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 text-white border border-white/20 focus:border-purple-400 focus:bg-white/10 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all duration-300"
-                      >
-                        <option value="">Select Gender *</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                        <option value="prefer-not-to-say">Prefer not to say</option>
-                      </select>
+                    {/* Gender Identity Sliders */}
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-semibold text-white/90 mb-3">
+                          Physically: <span className="text-purple-300 font-bold">{formData.physically || 50}%</span>
+                          <span className="text-xs text-white/60 ml-2">(0% = Man, 100% = Woman)</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={formData.physically || 50}
+                          onChange={(e) => setFormData({...formData, physically: parseInt(e.target.value)})}
+                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-physical"
+                        />
+                        <div className="flex justify-between text-xs text-white/60 mt-1">
+                          <span>Man (0%)</span>
+                          <span>Woman (100%)</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-semibold text-white/90 mb-3">
+                          Sexually: <span className="text-purple-300 font-bold">{formData.sexually || 50}%</span>
+                          <span className="text-xs text-white/60 ml-2">(0% = Masculine, 100% = Feminine)</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={formData.sexually || 50}
+                          onChange={(e) => setFormData({...formData, sexually: parseInt(e.target.value)})}
+                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-sexual"
+                        />
+                        <div className="flex justify-between text-xs text-white/60 mt-1">
+                          <span>Masculine (0%)</span>
+                          <span>Feminine (100%)</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-semibold text-white/90 mb-3">
+                          Emotionally: <span className="text-purple-300 font-bold">{formData.emotionally || 50}%</span>
+                          <span className="text-xs text-white/60 ml-2">(0% = Masculine, 100% = Feminine)</span>
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={formData.emotionally || 50}
+                          onChange={(e) => setFormData({...formData, emotionally: parseInt(e.target.value)})}
+                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-emotional"
+                        />
+                        <div className="flex justify-between text-xs text-white/60 mt-1">
+                          <span>Masculine (0%)</span>
+                          <span>Feminine (100%)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div>
@@ -679,7 +728,7 @@ function Profile() {
             <span>Go to Preference Browsing</span>
           </button>
           <button
-            onClick={() => navigate("/match-list")}
+            onClick={() => navigate("/match-list", { state: { skipModeSelection: true } })}
             className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl text-lg flex items-center justify-center gap-2"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -699,6 +748,67 @@ function Profile() {
           50% {
             transform: translateY(-20px) translateX(10px);
           }
+        }
+        
+        /* Slider Styles */
+        input[type="range"].slider-physical::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #8b5cf6, #ec4899);
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(139, 92, 246, 0.5);
+        }
+        
+        input[type="range"].slider-physical::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #8b5cf6, #ec4899);
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 6px rgba(139, 92, 246, 0.5);
+        }
+        
+        input[type="range"].slider-sexual::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #3b82f6, #8b5cf6);
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(59, 130, 246, 0.5);
+        }
+        
+        input[type="range"].slider-sexual::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #3b82f6, #8b5cf6);
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 6px rgba(59, 130, 246, 0.5);
+        }
+        
+        input[type="range"].slider-emotional::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #ec4899, #f43f5e);
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(236, 72, 153, 0.5);
+        }
+        
+        input[type="range"].slider-emotional::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: linear-gradient(to right, #ec4899, #f43f5e);
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 6px rgba(236, 72, 153, 0.5);
         }
         
         @keyframes fadeIn {

@@ -1,5 +1,5 @@
 // Google Gemini API Configuration
-const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qEi3Kp-shFcMI";
+const GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyC9f18CZUqQE4OEh3bYPtaKr0xTW9HVTcI";
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const axios = require("axios");
