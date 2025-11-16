@@ -28,11 +28,25 @@ export default function JamSession() {
   const [errorMessage, setErrorMessage] = useState("");
   const [youtubeVideoId, setYoutubeVideoId] = useState(null);
   const [youtubePlayer, setYoutubePlayer] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const socketRef = useRef(null);
   const audioRef = useRef(null);
   const youtubePlayerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const notificationSentRef = useRef(false);
+
+  // Track mouse position for animated background
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Check authentication on mount and get user info
   useEffect(() => {
@@ -129,9 +143,39 @@ export default function JamSession() {
       // Listen for track changes from other participants
       socketRef.current.on("trackChange", async (data) => {
         try {
+          console.log("[JamSession] Received trackChange from socket:", data);
           setCurrentTrack(data.track);
           setIsPlaying(data.isPlaying);
-          if (data.track && audioRef.current && data.track.preview_url) {
+          
+          // Handle YouTube video if provided
+          if (data.youtubeVideoId) {
+            console.log("[JamSession] Setting YouTube video ID from socket:", data.youtubeVideoId);
+            setYoutubeVideoId(data.youtubeVideoId);
+            setIsAudioLoading(false);
+          } else if (data.track) {
+            // If no YouTube video ID provided, try to fetch it
+            try {
+              const youtubeQuery = data.track.youtubeQuery || `${data.track.name} ${data.track.artists?.map(a => a.name || a).join(' ')}`;
+              const youtubeResponse = await axios.get(
+                `http://localhost:5001/api/search/youtube?q=${encodeURIComponent(youtubeQuery)}`
+              );
+              
+              if (youtubeResponse.data.videoId) {
+                console.log("[JamSession] Fetched YouTube video ID:", youtubeResponse.data.videoId);
+                setYoutubeVideoId(youtubeResponse.data.videoId);
+              } else {
+                // Fallback to preview if available
+                setYoutubeVideoId(null);
+              }
+            } catch (err) {
+              console.error("[JamSession] Error fetching YouTube video:", err);
+              setYoutubeVideoId(null);
+            }
+            setIsAudioLoading(false);
+          }
+          
+          // Handle audio preview if no YouTube video
+          if (data.track && !data.youtubeVideoId && audioRef.current && data.track.preview_url) {
             // Stop current playback
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
@@ -153,6 +197,10 @@ export default function JamSession() {
               console.error("Error playing track from socket:", err);
               setIsPlaying(false);
             }
+          } else if (data.youtubeVideoId && audioRef.current) {
+            // Stop any audio preview if YouTube video is playing
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
           }
         } catch (err) {
           console.error("Error handling track change:", err);
@@ -561,6 +609,7 @@ export default function JamSession() {
     setIsAudioLoading(true);
     
     let videoId = null;
+    let willBePlaying = false; // Track the playing state we'll set
     
     // Search YouTube for the full song
     try {
@@ -573,6 +622,7 @@ export default function JamSession() {
       if (youtubeResponse.data.videoId) {
         videoId = youtubeResponse.data.videoId;
         setYoutubeVideoId(videoId);
+        willBePlaying = true;
         setIsPlaying(true);
       } else if (youtubeResponse.data.error) {
         // If API key is not configured, fallback to Spotify preview if available
@@ -586,6 +636,7 @@ export default function JamSession() {
             audioRef.current.src = trackData.preview_url;
             audioRef.current.load();
             await audioRef.current.play();
+            willBePlaying = true;
             setIsPlaying(true);
             setErrorMessage("Playing 30-second preview. Configure YouTube API key for full songs.");
             setTimeout(() => setErrorMessage(""), 5000);
@@ -593,17 +644,20 @@ export default function JamSession() {
             console.error("Error playing preview:", audioErr);
             setErrorMessage("Could not play preview. Please configure YouTube API key for full songs.");
             setTimeout(() => setErrorMessage(""), 7000);
+            willBePlaying = false;
             setIsPlaying(false);
           }
         } else {
           // No preview available
           setErrorMessage("No preview available. Please configure YouTube API key in backend .env to play full songs.");
           setTimeout(() => setErrorMessage(""), 8000);
+          willBePlaying = false;
           setIsPlaying(false);
         }
       } else {
         setErrorMessage("Could not find video on YouTube. Please try another song.");
         setTimeout(() => setErrorMessage(""), 5000);
+        willBePlaying = false;
         setIsPlaying(false);
       }
     } catch (err) {
@@ -618,6 +672,7 @@ export default function JamSession() {
           audioRef.current.src = trackData.preview_url;
           audioRef.current.load();
           await audioRef.current.play();
+          willBePlaying = true;
           setIsPlaying(true);
           setErrorMessage("Playing 30-second preview. Configure YouTube API key for full songs.");
           setTimeout(() => setErrorMessage(""), 5000);
@@ -625,11 +680,13 @@ export default function JamSession() {
           console.error("Preview also failed:", audioErr);
           setErrorMessage(`Could not load video or preview. Please configure YouTube API key. Error: ${err.response?.data?.error || err.message}`);
           setTimeout(() => setErrorMessage(""), 8000);
+          willBePlaying = false;
           setIsPlaying(false);
         }
       } else {
         setErrorMessage(`Could not load video. Please configure YouTube API key. Error: ${err.response?.data?.error || err.message}`);
         setTimeout(() => setErrorMessage(""), 8000);
+        willBePlaying = false;
         setIsPlaying(false);
       }
     } finally {
@@ -637,19 +694,23 @@ export default function JamSession() {
     }
     
     // Emit track change via socket (don't let errors here disconnect socket)
-    if (socketRef.current && socketRef.current.connected && roomId) {
-      try {
-        socketRef.current.emit("trackChange", {
-          roomId: roomId,
-          track: trackData,
-          isPlaying: true,
-          youtubeVideoId: videoId
-        });
-      } catch (socketErr) {
-        console.error("Error emitting track change:", socketErr);
-        // Don't let socket errors affect playback
+    // Use a small delay to ensure state is updated before emitting
+    setTimeout(() => {
+      if (socketRef.current && socketRef.current.connected && roomId) {
+        try {
+          console.log("[JamSession] Emitting trackChange with videoId:", videoId, "isPlaying:", willBePlaying);
+          socketRef.current.emit("trackChange", {
+            roomId: roomId,
+            track: trackData,
+            isPlaying: willBePlaying, // Use the tracked playing state
+            youtubeVideoId: videoId
+          });
+        } catch (socketErr) {
+          console.error("Error emitting track change:", socketErr);
+          // Don't let socket errors affect playback
+        }
       }
-    }
+    }, 100); // Small delay to ensure state is set
   };
 
   const handleSearch = async () => {
@@ -783,15 +844,35 @@ export default function JamSession() {
   // If no matchId, redirect to match list
   if (!matchId) {
     return (
-      <div className="min-h-screen bg-[#0f172a] text-white flex items-center justify-center p-6">
-        <div className="bg-slate-800 p-10 rounded-xl w-full max-w-md shadow-lg text-center">
-          <h1 className="text-3xl font-bold mb-4">Jam Session</h1>
-          <p className="text-gray-400 mb-6">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex items-center justify-center p-6">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${mousePosition.y * 0.3}%`,
+              left: `${mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+            }}
+          />
+          <div
+            className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${100 - mousePosition.y * 0.3}%`,
+              right: `${100 - mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+              animationDelay: "1s",
+            }}
+          />
+        </div>
+        <div className="relative z-10 bg-white/10 backdrop-blur-xl rounded-3xl p-10 w-full max-w-md shadow-2xl border border-white/20 text-center">
+          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Jam Session</h1>
+          <p className="text-white/80 mb-6">
             Please start a jam session from a match profile.
           </p>
           <button
             onClick={() => navigate("/match-list")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+            className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-400 hover:via-purple-400 hover:to-pink-400 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
           >
             Go to Matches
           </button>
@@ -802,12 +883,45 @@ export default function JamSession() {
 
   // Jam Session Active View
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden p-6">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${mousePosition.y * 0.3}%`,
+            left: `${mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${100 - mousePosition.y * 0.3}%`,
+            right: `${100 - mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+            animationDelay: "1s",
+          }}
+        />
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white rounded-full opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="bg-slate-800 p-6 rounded-xl mb-6">
+        <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl mb-6 shadow-2xl border border-white/20">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">Jam Session</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Jam Session</h1>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div
@@ -815,14 +929,14 @@ export default function JamSession() {
                     isConnected ? "bg-green-500" : "bg-red-500"
                   }`}
                 />
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-white/80">
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
               {matches.length > 0 && (
                 <button
                   onClick={() => setShowInviteModal(true)}
-                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm font-semibold"
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                 >
                   + Invite Match
                 </button>
@@ -831,26 +945,26 @@ export default function JamSession() {
           </div>
           
           {/* Participants Info */}
-          <div className="bg-slate-900 p-4 rounded-lg">
+          <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
             <div className="text-center">
               {isConnected && otherParticipantName ? (
                 <p className="text-lg text-white">
-                  You are now in a jam session with <span className="font-semibold">{otherParticipantName}</span>
+                  You are now in a jam session with <span className="font-semibold text-purple-300">{otherParticipantName}</span>
                 </p>
               ) : (
-                <p className="text-lg text-gray-400">Connecting to jam session...</p>
+                <p className="text-lg text-white/70">Connecting to jam session...</p>
               )}
             </div>
           </div>
           
           {/* Error Message Toast */}
           {errorMessage && (
-            <div className="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 max-w-md">
+            <div className="fixed top-4 right-4 bg-red-600/90 backdrop-blur-sm text-white px-6 py-3 rounded-xl shadow-2xl z-50 max-w-md border border-red-400/30">
               <div className="flex items-center justify-between gap-4">
                 <p>{errorMessage}</p>
                 <button
                   onClick={() => setErrorMessage("")}
-                  className="text-white hover:text-gray-200 font-bold text-xl"
+                  className="text-white hover:text-gray-200 font-bold text-xl transition-transform hover:scale-110"
                 >
                   ×
                 </button>
@@ -863,8 +977,8 @@ export default function JamSession() {
         {isConnected && matchId ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Music Player Section */}
-            <div className="bg-slate-800 p-6 rounded-xl space-y-6">
-              <h2 className="text-xl font-bold">Now Playing Together</h2>
+            <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl space-y-6 shadow-2xl border border-white/20">
+              <h2 className="text-xl font-bold text-white">Now Playing Together</h2>
             
               {/* Track Search */}
               <div className="space-y-3">
@@ -875,12 +989,12 @@ export default function JamSession() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                    className="flex-1 p-3 rounded bg-slate-700 text-white placeholder-gray-400"
+                    className="flex-1 p-3 rounded-xl bg-white/10 backdrop-blur-sm text-white placeholder-white/40 border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all"
                   />
                   <button
                     onClick={handleSearch}
                     disabled={isSearching}
-                    className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-white font-semibold disabled:opacity-50"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl text-white font-semibold disabled:opacity-50 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                   >
                     {isSearching ? "Searching..." : "Search"}
                   </button>
@@ -888,25 +1002,25 @@ export default function JamSession() {
                 
                 {/* Search Results */}
                 {searchResults.length > 0 && (
-                  <div className="bg-slate-900 rounded-lg max-h-64 overflow-y-auto">
+                  <div className="bg-white/5 backdrop-blur-sm rounded-xl max-h-64 overflow-y-auto border border-white/10">
                     {searchResults.map((track) => (
                       <button
                         key={track.id}
                         onClick={() => handleTrackSelect(track)}
-                        className="w-full p-3 hover:bg-slate-800 text-left flex items-center gap-3 transition-colors cursor-pointer"
+                        className="w-full p-3 hover:bg-white/10 text-left flex items-center gap-3 transition-colors cursor-pointer border-b border-white/5 last:border-b-0"
                       >
                         {track.album?.imageUrl && (
                           <img
                             src={track.album.imageUrl}
                             alt={track.name}
-                            className="w-12 h-12 rounded"
+                            className="w-12 h-12 rounded-lg"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-white truncate">
                             {track.name}
                           </p>
-                          <p className="text-sm text-gray-400 truncate">
+                          <p className="text-sm text-white/60 truncate">
                             {track.artists?.map((a) => a.name).join(", ")}
                           </p>
                         </div>
@@ -920,20 +1034,20 @@ export default function JamSession() {
               {/* Current Track Display */}
               {currentTrack ? (
                 <div className="space-y-4">
-                  <div className="bg-slate-900 p-4 rounded-lg">
+                  <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
                     <div className="flex items-center gap-4">
                       {currentTrack.album?.images?.[0] && (
                         <img
                           src={currentTrack.album.images[0].url}
                           alt={currentTrack.name}
-                          className="w-20 h-20 rounded-lg"
+                          className="w-20 h-20 rounded-xl shadow-lg"
                         />
                       )}
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">
+                        <h3 className="font-semibold text-lg text-white">
                           {currentTrack.name}
                         </h3>
-                        <p className="text-gray-400">
+                        <p className="text-white/70">
                           {currentTrack.artists
                             ?.map((artist) => artist.name)
                             .join(", ")}
@@ -962,9 +1076,9 @@ export default function JamSession() {
                     </div>
                   ) : currentTrack?.preview_url ? (
                     <div className="w-full">
-                      <div className="bg-slate-900 p-4 rounded-lg text-center">
-                        <p className="text-gray-400 mb-2">Playing 30-second preview</p>
-                        <p className="text-xs text-yellow-400 mb-4">
+                      <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl text-center border border-white/10">
+                        <p className="text-white/80 mb-2">Playing 30-second preview</p>
+                        <p className="text-xs text-yellow-300 mb-4">
                           Configure YouTube API key for full songs
                         </p>
                         <audio
@@ -978,24 +1092,24 @@ export default function JamSession() {
                     </div>
                   ) : isAudioLoading ? (
                     <div className="text-center py-8">
-                      <p className="text-gray-400">Searching for video on YouTube...</p>
-                      <p className="text-xs text-gray-500 mt-2">This may take a moment</p>
+                      <p className="text-white/80">Searching for video on YouTube...</p>
+                      <p className="text-xs text-white/60 mt-2">This may take a moment</p>
                     </div>
                   ) : currentTrack ? (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="text-center py-8 text-white/80">
                       <p>Could not load video or preview</p>
-                      <p className="text-xs mt-2 text-yellow-400">
+                      <p className="text-xs mt-2 text-yellow-300">
                         Please configure YouTube API key in backend .env file
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="text-center py-8 text-white/70">
                       <p>Video will appear here when a track is selected</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-white/70">
                   <p>No track selected yet</p>
                   <p className="text-sm mt-2">
                     Search and select a track above to start listening together
@@ -1005,13 +1119,13 @@ export default function JamSession() {
             </div>
 
             {/* Chat Section */}
-            <div className="bg-slate-800 p-6 rounded-xl flex flex-col">
-              <h2 className="text-xl font-bold mb-4">Chat</h2>
+            <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl flex flex-col shadow-2xl border border-white/20">
+              <h2 className="text-xl font-bold mb-4 text-white">Chat</h2>
               
               {/* Messages Display */}
-              <div className="bg-slate-900 rounded-lg p-4 flex-1 overflow-y-auto mb-4 min-h-[300px] max-h-[500px]">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 flex-1 overflow-y-auto mb-4 min-h-[300px] max-h-[500px] border border-white/10">
                 {messages.length === 0 ? (
-                  <p className="text-gray-400 text-center">No messages yet. Start chatting!</p>
+                  <p className="text-white/70 text-center">No messages yet. Start chatting!</p>
                 ) : (
                   messages.map((msg, idx) => (
                     <div
@@ -1023,19 +1137,19 @@ export default function JamSession() {
                       }`}
                     >
                       <div
-                        className={`inline-block p-3 rounded-lg max-w-xs ${
+                        className={`inline-block p-3 rounded-2xl max-w-xs backdrop-blur-sm ${
                           msg.senderId === userId
-                            ? "bg-blue-600 text-white"
-                            : "bg-slate-700 text-white"
+                            ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+                            : "bg-white/10 text-white border border-white/20"
                         }`}
                       >
                         {msg.senderId !== userId && (
-                          <p className="text-xs font-semibold mb-1 opacity-80">
+                          <p className="text-xs font-semibold mb-1 text-white/80">
                             {msg.senderName || "User"}
                           </p>
                         )}
-                        <p className="text-sm break-words">{msg.message}</p>
-                        <p className="text-xs opacity-60 mt-1">
+                        <p className="text-sm break-words text-white">{msg.message}</p>
+                        <p className={`text-xs mt-1 ${msg.senderId === userId ? 'text-white/70' : 'text-white/50'}`}>
                           {new Date(msg.timestamp).toLocaleTimeString()}
                         </p>
                       </div>
@@ -1059,7 +1173,7 @@ export default function JamSession() {
                       sendMessage(e);
                     }
                   }}
-                  className="flex-1 p-3 rounded bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 p-3 rounded-xl bg-white/10 backdrop-blur-sm text-white placeholder-white/40 border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all"
                 />
                 <button
                   type="button"
@@ -1069,7 +1183,7 @@ export default function JamSession() {
                     sendMessage(e);
                   }}
                   disabled={!newMessage.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
                 >
                   Send
                 </button>
@@ -1077,11 +1191,11 @@ export default function JamSession() {
             </div>
           </div>
         ) : (
-          <div className="bg-slate-800 p-6 rounded-xl text-center">
-            <p className="text-gray-400">
+          <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl text-center shadow-2xl border border-white/20">
+            <p className="text-white/80">
               Waiting for {otherParticipantName || "your match"} to join...
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-white/60 mt-2">
               They will receive a notification to join the jam session
             </p>
           </div>
@@ -1089,12 +1203,12 @@ export default function JamSession() {
 
         {/* Invite Modal */}
         {showInviteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-slate-800 p-6 rounded-xl max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">Invite a Match</h2>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white/10 backdrop-blur-xl p-6 rounded-3xl max-w-md w-full mx-4 shadow-2xl border border-white/20">
+              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Invite a Match</h2>
               <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
                 {matches.filter(m => m.userId !== matchId).length === 0 ? (
-                  <p className="text-gray-400 text-center py-4">No other matches to invite</p>
+                  <p className="text-white/70 text-center py-4">No other matches to invite</p>
                 ) : (
                   matches
                     .filter(m => m.userId !== matchId)
@@ -1102,10 +1216,10 @@ export default function JamSession() {
                       <button
                         key={match.userId}
                         onClick={() => handleInviteMatch(match.userId)}
-                        className="w-full p-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-left flex items-center gap-3"
+                        className="w-full p-3 bg-white/5 hover:bg-white/10 rounded-xl text-left flex items-center gap-3 transition-all border border-white/10 hover:border-white/20"
                       >
                         <div className="flex-1">
-                          <p className="font-semibold">{match.name}</p>
+                          <p className="font-semibold text-white">{match.name}</p>
                         </div>
                         <span className="text-blue-400">Invite</span>
                       </button>
@@ -1114,7 +1228,7 @@ export default function JamSession() {
               </div>
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg"
+                className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl text-white transition-all duration-300 transform hover:scale-105 active:scale-95 border border-white/20"
               >
                 Close
               </button>
@@ -1131,12 +1245,24 @@ export default function JamSession() {
               }
               navigate("/match-list");
             }}
-            className="text-gray-400 hover:text-white underline"
+            className="text-white/70 hover:text-white underline transition-colors"
           >
             Leave Jam Session
           </button>
         </div>
       </div>
+
+      {/* Custom Animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
