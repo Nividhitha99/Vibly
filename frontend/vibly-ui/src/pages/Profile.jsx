@@ -70,9 +70,6 @@ function Profile() {
           name: userRes.data.name || "",
           age: userRes.data.age || "",
           gender: userRes.data.gender || "",
-          physically: userRes.data.physically !== undefined ? userRes.data.physically : 50,
-          sexually: userRes.data.sexually !== undefined ? userRes.data.sexually : 50,
-          emotionally: userRes.data.emotionally !== undefined ? userRes.data.emotionally : 50,
           birthday: userRes.data.birthday || "",
           location: userRes.data.location || "",
           city: userRes.data.city || "",
@@ -158,11 +155,6 @@ function Profile() {
       return;
     }
     
-    // Validate sexuality sliders are set (default to 50 if not set)
-    if (formData.physically === undefined) formData.physically = 50;
-    if (formData.sexually === undefined) formData.sexually = 50;
-    if (formData.emotionally === undefined) formData.emotionally = 50;
-
     setSaving(true);
 
     try {
@@ -172,9 +164,6 @@ function Profile() {
         name: formData.name,
         age: formData.age,
         gender: formData.gender,
-        physically: formData.physically !== undefined ? formData.physically : 50,
-        sexually: formData.sexually !== undefined ? formData.sexually : 50,
-        emotionally: formData.emotionally !== undefined ? formData.emotionally : 50,
         birthday: formData.birthday,
         location: formData.location,
         city: formData.city,
@@ -539,64 +528,34 @@ function Profile() {
                         placeholder="Your age"
                       />
                     </div>
-                    {/* Gender Identity Sliders */}
-                    <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-white/90 mb-3">
-                          Physically: <span className="text-purple-300 font-bold">{formData.physically || 50}%</span>
-                          <span className="text-xs text-white/60 ml-2">(0% = Man, 100% = Woman)</span>
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={formData.physically || 50}
-                          onChange={(e) => setFormData({...formData, physically: parseInt(e.target.value)})}
-                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-physical"
-                        />
-                        <div className="flex justify-between text-xs text-white/60 mt-1">
-                          <span>Man (0%)</span>
-                          <span>Woman (100%)</span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-white/90 mb-3">
-                          Sexually: <span className="text-purple-300 font-bold">{formData.sexually || 50}%</span>
-                          <span className="text-xs text-white/60 ml-2">(0% = Masculine, 100% = Feminine)</span>
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={formData.sexually || 50}
-                          onChange={(e) => setFormData({...formData, sexually: parseInt(e.target.value)})}
-                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-sexual"
-                        />
-                        <div className="flex justify-between text-xs text-white/60 mt-1">
-                          <span>Masculine (0%)</span>
-                          <span>Feminine (100%)</span>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-white/90 mb-3">
-                          Emotionally: <span className="text-purple-300 font-bold">{formData.emotionally || 50}%</span>
-                          <span className="text-xs text-white/60 ml-2">(0% = Masculine, 100% = Feminine)</span>
-                        </label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={formData.emotionally || 50}
-                          onChange={(e) => setFormData({...formData, emotionally: parseInt(e.target.value)})}
-                          className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer slider-emotional"
-                        />
-                        <div className="flex justify-between text-xs text-white/60 mt-1">
-                          <span>Masculine (0%)</span>
-                          <span>Feminine (100%)</span>
-                        </div>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-white/90 mb-2">Gender *</label>
+                      <select
+                        value={formData.gender || ""}
+                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 text-white border border-white/20 focus:border-purple-400 focus:bg-white/10 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all duration-300 appearance-none cursor-pointer"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a78bfa' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 1rem center',
+                          paddingRight: '2.5rem'
+                        }}
+                      >
+                        <option value="" disabled className="bg-purple-900 text-white">Select your gender</option>
+                        <option value="male" className="bg-purple-900 text-white">Male</option>
+                        <option value="female" className="bg-purple-900 text-white">Female</option>
+                        <option value="non-binary" className="bg-purple-900 text-white">Non-binary</option>
+                        <option value="genderqueer" className="bg-purple-900 text-white">Genderqueer</option>
+                        <option value="genderfluid" className="bg-purple-900 text-white">Genderfluid</option>
+                        <option value="agender" className="bg-purple-900 text-white">Agender</option>
+                        <option value="bigender" className="bg-purple-900 text-white">Bigender</option>
+                        <option value="demigender" className="bg-purple-900 text-white">Demigender</option>
+                        <option value="transgender" className="bg-purple-900 text-white">Transgender</option>
+                        <option value="two-spirit" className="bg-purple-900 text-white">Two-Spirit</option>
+                        <option value="other" className="bg-purple-900 text-white">Other</option>
+                        <option value="prefer-not-to-say" className="bg-purple-900 text-white">Prefer not to say</option>
+                      </select>
                     </div>
                   </div>
                   <div>
@@ -750,65 +709,25 @@ function Profile() {
           }
         }
         
-        /* Slider Styles */
-        input[type="range"].slider-physical::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
+        /* Select Dropdown Styles */
+        select {
+          color-scheme: dark;
+        }
+        
+        select option {
+          background-color: #1e1b4b;
+          color: white;
+          padding: 0.5rem;
+        }
+        
+        select option:hover,
+        select option:focus,
+        select option:checked {
           background: linear-gradient(to right, #8b5cf6, #ec4899);
-          cursor: pointer;
-          box-shadow: 0 2px 6px rgba(139, 92, 246, 0.5);
         }
         
-        input[type="range"].slider-physical::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(to right, #8b5cf6, #ec4899);
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 6px rgba(139, 92, 246, 0.5);
-        }
-        
-        input[type="range"].slider-sexual::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          cursor: pointer;
-          box-shadow: 0 2px 6px rgba(59, 130, 246, 0.5);
-        }
-        
-        input[type="range"].slider-sexual::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(to right, #3b82f6, #8b5cf6);
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 6px rgba(59, 130, 246, 0.5);
-        }
-        
-        input[type="range"].slider-emotional::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(to right, #ec4899, #f43f5e);
-          cursor: pointer;
-          box-shadow: 0 2px 6px rgba(236, 72, 153, 0.5);
-        }
-        
-        input[type="range"].slider-emotional::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: linear-gradient(to right, #ec4899, #f43f5e);
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 6px rgba(236, 72, 153, 0.5);
+        select:hover {
+          border-color: rgba(139, 92, 246, 0.5);
         }
         
         @keyframes fadeIn {

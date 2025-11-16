@@ -12426,6 +12426,19 @@
       "data": null,
       "read": false,
       "createdAt": 1763276708173
+    },
+    {
+      "id": "1763278197719lusizosfc",
+      "userId": "85b5e57c-5e36-42ca-a61d-74fcb93832d1",
+      "type": "jam-invite",
+      "message": "Nivi invited you to a jam session!",
+      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
+      "actionUrl": {
+        "roomId": "jam-2bc81148-17cc-45cf-87c4-be9b55d8810a-85b5e57c-5e36-42ca-a61d-74fcb93832d1"
+      },
+      "data": null,
+      "read": false,
+      "createdAt": 1763278197719
     }
   ],
   "messages": [
