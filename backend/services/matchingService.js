@@ -1,15 +1,21 @@
 const getDb = require("../utils/db");
 const cosineSimilarity = require("../utils/cosine");
 
-exports.getMatches = async (userId) => {
+exports.getMatches = async (userId, mode = "preferences") => {
   const db = await getDb();
   const allUsers = db.data.users;
   const allTastes = db.data.tastes;
   const allEmbeddings = db.data.embeddings;
 
-  console.log(`[Matching] Finding matches for user ${userId}`);
+  console.log(`[Matching] Finding matches for user ${userId} in mode: ${mode}`);
   console.log(`[Matching] Total users: ${allUsers.length}, Total tastes: ${allTastes.length}, Total embeddings: ${allEmbeddings.length}`);
 
+  // Mode: "preferences" (default) or "location"
+  if (mode === "location") {
+    return exports.getLocationBasedMatches(userId);
+  }
+
+  // Default: preferences-based matching
   const currentEmbedding = allEmbeddings.find(e => e.userId === userId);
   if (!currentEmbedding || !currentEmbedding.vector || !Array.isArray(currentEmbedding.vector)) {
     console.log(`[Matching] No embedding found for user ${userId} or embedding vector is missing`);
@@ -659,6 +665,283 @@ exports.getMatches = async (userId) => {
   if (finalResults.length > 0) {
     console.log(`[Matching] Top match: ${finalResults[0].name} with score ${(finalResults[0].score * 100).toFixed(1)}%`);
     console.log(`[Matching] All match IDs:`, finalResults.map(m => `${m.name} (${(m.score * 100).toFixed(1)}%)`));
+  }
+  
+  return finalResults;
+};
+
+// Location-based matching (only age/location, no preferences)
+exports.getLocationBasedMatches = async (userId) => {
+  const db = await getDb();
+  const allUsers = db.data.users;
+
+  console.log(`[Matching] Finding location-based matches for user ${userId}`);
+
+  const currentUser = allUsers.find(u => u.id === userId);
+  if (!currentUser) {
+    console.log(`[Matching] User ${userId} not found`);
+    return [];
+  }
+
+  // Get users that current user has already liked or passed
+  const likedUserIds = new Set();
+  const passedUserIds = new Set();
+  const matchedUserIds = new Set();
+  
+  if (db.data.matches) {
+    db.data.matches.forEach(m => {
+      if (m.fromUser === userId) {
+        if (m.status === "confirmed") {
+          matchedUserIds.add(m.toUser);
+        } else {
+          likedUserIds.add(m.toUser);
+        }
+      }
+      if (m.toUser === userId && m.status === "confirmed") {
+        matchedUserIds.add(m.fromUser);
+      }
+    });
+  }
+  
+  if (db.data.passes) {
+    db.data.passes.forEach(p => {
+      if (p.fromUser === userId) {
+        passedUserIds.add(p.toUser);
+      }
+    });
+  }
+
+  console.log(`[Matching] Excluding ${likedUserIds.size} liked users, ${passedUserIds.size} passed users, ${matchedUserIds.size} matched users`);
+
+  const results = [];
+
+  for (const otherUser of allUsers) {
+    if (otherUser.id === userId) {
+      continue;
+    }
+
+    // Skip users that have already been liked, passed, or matched
+    if (likedUserIds.has(otherUser.id)) {
+      continue;
+    }
+    if (passedUserIds.has(otherUser.id)) {
+      continue;
+    }
+    if (matchedUserIds.has(otherUser.id)) {
+      continue;
+    }
+
+    // AGE FILTER
+    if (currentUser && currentUser.ageRangeMin !== undefined && currentUser.ageRangeMax !== undefined) {
+      const otherAge = otherUser.age;
+      if (otherAge !== undefined && otherAge !== null) {
+        if (otherAge < currentUser.ageRangeMin || otherAge > currentUser.ageRangeMax) {
+          console.log(`[Matching] Skipping ${otherUser.name} - age out of range (${otherAge} not in ${currentUser.ageRangeMin}-${currentUser.ageRangeMax})`);
+          continue;
+        }
+      }
+    }
+
+    // DISTANCE FILTER
+    if (currentUser && currentUser.maxDistance !== undefined && currentUser.maxDistance > 0) {
+      const currentLocation = (currentUser.city || "").toLowerCase().trim();
+      const otherLocation = (otherUser.city || "").toLowerCase().trim();
+      const currentRegion = (currentUser.location || currentUser.region || "").toLowerCase().trim();
+      const otherRegion = (otherUser.location || otherUser.region || "").toLowerCase().trim();
+      
+      // If both have city info, check distance
+      if (currentLocation && otherLocation) {
+        // Same city - always allow regardless of distance
+        if (currentLocation === otherLocation) {
+          console.log(`[Matching] ✅ Allowing ${otherUser.name} - same city (${currentLocation})`);
+        } else if (currentUser.maxDistance <= 20) {
+          // For 20 miles or less, require same city
+          console.log(`[Matching] ❌ Skipping ${otherUser.name} - different city (${currentLocation} vs ${otherLocation}) for maxDistance ${currentUser.maxDistance}`);
+          continue;
+        } else if (currentUser.maxDistance <= 30) {
+          // For 30 miles, check if same region
+          if (currentRegion && otherRegion && currentRegion === otherRegion) {
+            console.log(`[Matching] ✅ Allowing ${otherUser.name} - different city but same region (${currentRegion})`);
+          } else {
+            // Map US states to "us" for major region matching
+            const usStates = ["md", "ny", "ca", "tx", "fl", "il", "pa", "oh", "ga", "nc", "mi", "nj", "va", "wa", "az", "ma", "tn", "mo", "wi", "co", "sc", "al", "la", "ky", "or", "ok", "ct", "ut", "ia", "nv", "ar", "ms", "ks", "nm", "ne", "wv", "id", "hi", "nh", "me", "mt", "ri", "de", "sd", "nd", "ak", "dc", "vt", "wy"];
+            const majorRegions = {
+              "us": "us", "united states": "us", "usa": "us",
+              "ca": "ca", "canada": "ca",
+              "gb": "gb", "uk": "gb", "united kingdom": "gb",
+              "in": "in", "india": "in",
+              "au": "au", "australia": "au"
+            };
+            // Add US states to mapping
+            usStates.forEach(state => {
+              majorRegions[state] = "us";
+            });
+            const currentMajorRegion = majorRegions[currentRegion] || currentRegion;
+            const otherMajorRegion = majorRegions[otherRegion] || otherRegion;
+            
+            if (currentMajorRegion && otherMajorRegion && currentMajorRegion !== otherMajorRegion) {
+              console.log(`[Matching] ❌ Skipping ${otherUser.name} - different major region (${currentMajorRegion} vs ${otherMajorRegion})`);
+              continue;
+            } else {
+              // Same major region or both not in mapping, allow match
+              console.log(`[Matching] ✅ Allowing ${otherUser.name} - same major region (${currentMajorRegion}) or unknown region`);
+            }
+          }
+        } else {
+          // For 50+ miles, allow any location
+          console.log(`[Matching] ✅ Allowing ${otherUser.name} - maxDistance ${currentUser.maxDistance} allows any location`);
+        }
+      } else {
+        // Missing location info - allow match (user can decide)
+        console.log(`[Matching] ✅ Allowing ${otherUser.name} - missing location info, allowing match`);
+      }
+    }
+
+    // GENDER FILTER
+    if (currentUser && currentUser.lookingFor && otherUser.gender) {
+      const lookingForArray = Array.isArray(currentUser.lookingFor) 
+        ? currentUser.lookingFor 
+        : [currentUser.lookingFor];
+      
+      const otherGenderLower = otherUser.gender.toLowerCase();
+      const isMatch = lookingForArray.some(pref => {
+        const prefLower = pref.toLowerCase();
+        if (prefLower === 'non-binary') return true;
+        return prefLower === otherGenderLower;
+      });
+      
+      if (!isMatch) {
+        console.log(`[Matching] Skipping ${otherUser.name} - gender preference mismatch`);
+        continue;
+      }
+    }
+
+    // Also check if other user is looking for current user's gender
+    if (otherUser.lookingFor && currentUser && currentUser.gender) {
+      const otherLookingForArray = Array.isArray(otherUser.lookingFor) 
+        ? otherUser.lookingFor 
+        : [otherUser.lookingFor];
+      
+      const currentGenderLower = currentUser.gender.toLowerCase();
+      const isMatch = otherLookingForArray.some(pref => {
+        const prefLower = pref.toLowerCase();
+        if (prefLower === 'non-binary') return true;
+        return prefLower === currentGenderLower;
+      });
+      
+      if (!isMatch) {
+        console.log(`[Matching] Skipping ${otherUser.name} - they're not looking for ${currentUser.gender}`);
+        continue;
+      }
+    }
+
+    // For location-based matching, assign a base score based on location proximity
+    // Same city = 0.8, same region = 0.6, different region = 0.4
+    let score = 0.7; // Base score for location-based matches (higher to ensure they pass 60% threshold)
+    
+    if (currentUser.city && otherUser.city) {
+      if (currentUser.city.toLowerCase() === otherUser.city.toLowerCase()) {
+        score = 0.85;
+      } else if (currentUser.location && otherUser.location && 
+                 currentUser.location.toLowerCase() === otherUser.location.toLowerCase()) {
+        score = 0.6;
+      } else {
+        score = 0.4;
+      }
+    }
+
+    // Age proximity bonus (closer in age = higher score)
+    if (currentUser.age && otherUser.age) {
+      const ageDiff = Math.abs(currentUser.age - otherUser.age);
+      if (ageDiff <= 2) {
+        score += 0.1;
+      } else if (ageDiff <= 5) {
+        score += 0.05;
+      }
+    }
+
+    // Ensure score is between 0 and 1
+    score = Math.min(1, Math.max(0, score));
+
+    results.push({
+      userId: otherUser.id,
+      name: otherUser.name || 'Unknown',
+      email: otherUser.email || '',
+      profileImages: otherUser.profileImages || null,
+      imageUrl: otherUser.imageUrl || null,
+      score: score
+    });
+
+    console.log(`[Matching] ✅ Added location-based match: ${otherUser.name} (userId: ${otherUser.id}) - Score: ${score.toFixed(4)}`);
+  }
+
+  // Filter matches by threshold
+  // For location-based matching, use 0.4 (40%) since scores are based on proximity
+  const scoreThreshold = 0.4; // Location-based matches use lower threshold
+  const filteredResults = results.filter(match => {
+    const score = match.score || 0;
+    return score >= scoreThreshold;
+  });
+  
+  console.log(`[Matching] Filtered ${results.length} location-based matches to ${filteredResults.length} with ${(scoreThreshold * 100).toFixed(0)}%+ score`);
+  
+  // Sort highest score first
+  const sorted = filteredResults.sort((a, b) => {
+    const scoreA = a.score || 0;
+    const scoreB = b.score || 0;
+    return scoreB - scoreA;
+  });
+  
+  // Remove duplicates by userId
+  const uniqueMap = new Map();
+  const seenUserIds = new Set();
+  
+  for (const match of sorted) {
+    if (!match || !match.userId) {
+      continue;
+    }
+    
+    const normalizedUserId = String(match.userId).trim();
+    
+    if (seenUserIds.has(normalizedUserId)) {
+      const existing = uniqueMap.get(normalizedUserId);
+      if (existing && match.score > existing.score) {
+        uniqueMap.set(normalizedUserId, match);
+      }
+    } else {
+      seenUserIds.add(normalizedUserId);
+      uniqueMap.set(normalizedUserId, match);
+    }
+  }
+  
+  const uniqueResults = Array.from(uniqueMap.values());
+  
+  // Final safety check
+  const finalResults = [];
+  const finalSeen = new Set();
+  for (const match of uniqueResults) {
+    const id = String(match.userId).trim();
+    if (!finalSeen.has(id)) {
+      finalSeen.add(id);
+      finalResults.push(match);
+    }
+  }
+  
+  // Extra verification
+  const finalUserIds = finalResults.map(m => String(m.userId).trim());
+  const duplicateCheck = finalUserIds.filter((id, index) => finalUserIds.indexOf(id) !== index);
+  if (duplicateCheck.length > 0) {
+    console.error(`[Matching] ❌ CRITICAL ERROR: Found ${duplicateCheck.length} duplicate userIds in location-based results`);
+    const trulyUnique = [];
+    const trulySeen = new Set();
+    for (const match of finalResults) {
+      const id = String(match.userId).trim();
+      if (!trulySeen.has(id)) {
+        trulySeen.add(id);
+        trulyUnique.push(match);
+      }
+    }
+    return trulyUnique;
   }
   
   return finalResults;

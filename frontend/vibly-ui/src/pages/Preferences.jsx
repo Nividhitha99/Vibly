@@ -109,8 +109,8 @@ function Preferences() {
       // Minimum 8 seconds wait time to show the loading screen properly
       await checkForMatches(userId, 8000, 30, 2000);
 
-      // Navigate to match list
-      navigate("/match-list");
+      // Navigate to match list with flag to skip mode selection
+      navigate("/match-list", { state: { skipModeSelection: true } });
     } catch (err) {
       console.error(err);
       setIsProcessing(false);

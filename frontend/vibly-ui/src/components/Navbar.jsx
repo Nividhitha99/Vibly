@@ -137,8 +137,23 @@ function Navbar() {
               style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
             >
               <HeartIcon className="w-4 h-4" />
-              <span className="relative z-10">Matches</span>
+              <span className="relative z-10">Discover</span>
               {(isActive("/match-list") || isActive("/match-profile")) && (
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-lg blur-sm"></div>
+              )}
+            </Link>
+            <Link
+              to="/my-matches"
+              className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                isActive("/my-matches")
+                  ? "bg-gradient-to-r from-pink-500/90 to-rose-500/90 text-white shadow-lg shadow-pink-500/30"
+                  : "text-white/80 hover:text-white hover:bg-white/5"
+              }`}
+              style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+            >
+              <HeartIcon className="w-4 h-4" />
+              <span className="relative z-10">My Matches</span>
+              {isActive("/my-matches") && (
                 <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-lg blur-sm"></div>
               )}
             </Link>

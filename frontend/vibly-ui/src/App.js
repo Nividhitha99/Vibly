@@ -8,6 +8,7 @@ import Preferences from "./pages/Preferences";
 import MatchList from "./pages/MatchList";
 import MatchProfile from "./pages/MatchProfile";
 import PendingLikes from "./pages/PendingLikes";
+import MyMatches from "./pages/MyMatches";
 import Chat from "./pages/Chat";
 import JamSession from "./pages/JamSession";
 import WatchParty from "./pages/WatchParty";
@@ -27,6 +28,7 @@ function App() {
         <Route path="/age-preference" element={<AgePreference />} />
         <Route path="/preferences" element={<Preferences />} />
         <Route path="/match-list" element={<MatchList />} />
+        <Route path="/my-matches" element={<MyMatches />} />
         <Route path="/pending-likes" element={<PendingLikes />} />
         <Route path="/match-profile/:id" element={<MatchProfile />} />
         <Route path="/chat" element={<Chat />} />

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import TinderCard from "../components/TinderCard";
 import GeminiLoading from "../components/GeminiLoading";
 
 function MatchList() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [matches, setMatches] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Don't show loading until mode is selected
   const [matchPreferences, setMatchPreferences] = useState({}); // Store preferences per userId
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedUser, setMatchedUser] = useState(null);
@@ -21,9 +22,21 @@ function MatchList() {
   const [filterByAge, setFilterByAge] = useState(false); // Default to false - don't filter by default
   const [filterByLocation, setFilterByLocation] = useState(false); // Default to false - don't filter by default
   const [filteredMatches, setFilteredMatches] = useState([]);
-  const [showGeminiLoading, setShowGeminiLoading] = useState(true);
+  const [showGeminiLoading, setShowGeminiLoading] = useState(false); // Don't show loading until mode is selected
   const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // Initialize mode from localStorage immediately, or show selection if not set
+  const [matchingMode, setMatchingMode] = useState(() => {
+    const savedMode = localStorage.getItem("matchingMode");
+    return savedMode || null; // null means no mode selected yet - will show selection
+  });
+  const [showModeSelection, setShowModeSelection] = useState(() => {
+    // Check localStorage immediately on mount
+    const savedMode = localStorage.getItem("matchingMode");
+    const shouldShow = !savedMode; // Show selection if no saved mode
+    console.log("[MatchList] Initial state - savedMode:", savedMode, "showModeSelection:", shouldShow);
+    return shouldShow;
+  });
 
   // Track mouse position for animated background
   useEffect(() => {
@@ -44,7 +57,53 @@ function MatchList() {
     console.log(`Current index changed to: ${currentIndex}, match: ${displayMatches[currentIndex]?.name || 'none'}`);
   }, [currentIndex, matches, filteredMatches, showFilters]);
 
+  // Show mode selection based on navigation source
   useEffect(() => {
+    const savedMode = localStorage.getItem("matchingMode");
+    const skipModeSelection = location.state?.skipModeSelection;
+    
+    console.log("[MatchList] Navigation state:", location.state);
+    console.log("[MatchList] Skip mode selection:", skipModeSelection);
+    console.log("[MatchList] Saved mode:", savedMode);
+    
+    // If coming from Preferences page, skip mode selection and use saved/default mode
+    if (skipModeSelection) {
+      console.log("[MatchList] Coming from Preferences - skipping mode selection");
+      const modeToUse = savedMode || "preferences";
+      setMatchingMode(modeToUse);
+      setShowModeSelection(false);
+      // Clear the state so it doesn't persist on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    } else {
+      // Coming from login or profile edit - show mode selection
+      console.log("[MatchList] Coming from login/profile - showing mode selection");
+      if (savedMode) {
+        // Pre-select the saved mode, but still show the selection screen
+        console.log("[MatchList] Found saved mode:", savedMode, "- will pre-select but show selection");
+        setMatchingMode(savedMode);
+      } else {
+        // No saved mode - default to preferences
+        console.log("[MatchList] No saved mode found - defaulting to preferences");
+        setMatchingMode("preferences");
+      }
+      
+      // Show mode selection screen
+      setShowModeSelection(true);
+    }
+    
+    setLoading(false);
+    setShowGeminiLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  useEffect(() => {
+    // Don't fetch if mode selection is showing OR if no mode is set
+    if (showModeSelection || !matchingMode) {
+      console.log("[MatchList] Skipping fetch - showModeSelection:", showModeSelection, "matchingMode:", matchingMode);
+      return;
+    }
+
+    console.log("[MatchList] Fetching matches with mode:", matchingMode);
     const fetchMatches = async () => {
       try {
         const userId = localStorage.getItem("userId");
@@ -60,8 +119,8 @@ function MatchList() {
         const minLoadingTime = 3000;
         const startTime = Date.now();
 
-        console.log("Fetching matches for user:", userId);
-        const res = await axios.get(`http://localhost:5001/api/match/${userId}`);
+        console.log("Fetching matches for user:", userId, "mode:", matchingMode);
+        const res = await axios.get(`http://localhost:5001/api/match/${userId}?mode=${matchingMode}`);
         
         console.log("Matches response:", res.data);
         const matchesList = res.data.matches || [];
@@ -119,12 +178,14 @@ function MatchList() {
         // Use validated matches
         const finalMatchesList = validatedMatches;
         
-        // Filter matches by 60% threshold (score >= 0.6)
+        // Filter matches by 60% threshold (score >= 0.6) for preferences mode
+        // For location mode, use a lower threshold (0.4) since scores are based on proximity
+        const scoreThreshold = matchingMode === "location" ? 0.4 : 0.6;
         const filteredMatches = finalMatchesList.filter(match => {
           const score = match.score || 0;
-          return score >= 0.6;
+          return score >= scoreThreshold;
         });
-        console.log(`Filtered to ${filteredMatches.length} matches with 60%+ compatibility`);
+        console.log(`Filtered to ${filteredMatches.length} matches with ${(scoreThreshold * 100).toFixed(0)}%+ compatibility (mode: ${matchingMode})`);
         
         // Sort by score (high to low) - backend should already do this, but ensure it
         const sortedMatches = filteredMatches.sort((a, b) => {
@@ -257,7 +318,27 @@ function MatchList() {
     };
 
     fetchMatches();
-  }, []);
+  }, [matchingMode, showModeSelection]);
+
+  const handleModeSelection = (mode) => {
+    console.log("[MatchList] User selected mode:", mode);
+    // Just update the mode state, don't hide selection yet - user needs to click "Continue"
+    setMatchingMode(mode);
+  };
+
+  const handleContinueWithMode = () => {
+    if (!matchingMode) {
+      // Default to preferences if somehow no mode is set
+      setMatchingMode("preferences");
+    }
+    console.log("[MatchList] Continuing with mode:", matchingMode || "preferences");
+    localStorage.setItem("matchingMode", matchingMode || "preferences");
+    setShowModeSelection(false);
+    // Now trigger match fetching after mode is confirmed
+    setShowGeminiLoading(true);
+    setLoading(true);
+    console.log("[MatchList] Mode saved, will fetch matches now");
+  };
 
   const fetchMatchDetails = async (userId) => {
     try {
@@ -386,19 +467,38 @@ function MatchList() {
       return;
     }
     
+    // CRITICAL: Capture match data BEFORE any state changes
+    const displayMatches = showFilters ? matches : filteredMatches;
+    const currentMatch = displayMatches[index];
+    if (!currentMatch) {
+      console.error("No match found at index", index);
+      return;
+    }
+    
+    const matchUserId = currentMatch.userId;
+    const matchName = currentMatch.name || "them";
+    const userId = localStorage.getItem("userId");
+    
+    // Note: We'll advance the index after processing the like/pass
+    // This ensures we handle matches correctly (removing from array first)
+    
     if (direction === 'right') {
       // Like - send like to backend
-      const userId = localStorage.getItem("userId");
-      const displayMatches = showFilters ? matches : filteredMatches;
-      const matchUserId = displayMatches[index].userId;
+      console.log(`[MatchList] Sending like from ${userId} to ${matchUserId} (${matchName})`);
+      console.log(`[MatchList] Match data - name: ${matchName}, userId: ${matchUserId}, email: ${currentMatch.email}`);
       
-      console.log(`Sending like from ${userId} to ${matchUserId}`);
+      // Double-check: Verify the userId matches the name we're displaying
+      if (currentMatch.name !== matchName) {
+        console.error(`[MatchList] ⚠️ WARNING: Name mismatch! currentMatch.name: ${currentMatch.name}, matchName: ${matchName}`);
+      }
       
       try {
         const response = await axios.post("http://localhost:5001/api/match-status/like", {
           fromUser: userId,
           toUser: matchUserId
         });
+        
+        console.log(`[MatchList] Like sent successfully - fromUser: ${userId}, toUser: ${matchUserId} (${matchName})`);
         
         console.log("Like response:", response.data);
         console.log("Response match status:", response.data.match);
@@ -409,45 +509,87 @@ function MatchList() {
         console.log("Is match?", isMatch);
         console.log("Match status:", response.data.match);
         
-        const displayMatches = showFilters ? matches : filteredMatches;
         if (isMatch) {
           // It's a confirmed match! Both users liked each other
-          const matchData = displayMatches[index];
-          console.log("🎉 It's a match!", matchData.name);
-          console.log("Setting matched user:", matchData);
-          console.log("Match data - name:", matchData.name, "userId:", matchData.userId, "email:", matchData.email);
+          console.log("🎉 It's a match!", matchName);
+          console.log("Setting matched user:", currentMatch);
+          console.log("Match data - name:", matchName, "userId:", matchUserId, "email:", currentMatch.email);
           
           // Verify match data consistency
-          if (!matchData.userId) {
-            console.error("ERROR: Match data missing userId!", matchData);
+          if (!matchUserId) {
+            console.error("ERROR: Match data missing userId!", currentMatch);
           }
-          if (!matchData.name) {
-            console.error("ERROR: Match data missing name!", matchData);
+          if (!matchName) {
+            console.error("ERROR: Match data missing name!", currentMatch);
           }
           
-          // Set both states together
-          const matchedUserData = { ...matchData };
+          // CRITICAL: Remove matched user from matches array immediately
+          // This prevents them from appearing again after closing the modal
+          setMatches(prevMatches => {
+            const filtered = prevMatches.filter(m => m.userId !== matchUserId);
+            console.log(`[MatchList] Removed matched user ${matchName} from matches. Remaining: ${filtered.length}`);
+            return filtered;
+          });
+          setFilteredMatches(prevFiltered => {
+            const filtered = prevFiltered.filter(m => m.userId !== matchUserId);
+            console.log(`[MatchList] Removed matched user ${matchName} from filteredMatches. Remaining: ${filtered.length}`);
+            return filtered;
+          });
+          
+          // Adjust index after removing the matched user
+          // Since we removed the user at the current index, we need to adjust
+          // Use setTimeout to ensure state updates have been applied
+          setTimeout(() => {
+            setCurrentIndex(prevIndex => {
+              const displayMatches = showFilters ? matches : filteredMatches;
+              // If we were at or beyond the last index, go to the last valid index
+              if (prevIndex >= displayMatches.length) {
+                return Math.max(0, displayMatches.length - 1);
+              }
+              // Otherwise stay at same index (which now points to next user after removal)
+              return prevIndex;
+            });
+          }, 0);
+          
+          // Set both states together with captured data
+          const matchedUserData = { ...currentMatch };
           setMatchedUser(matchedUserData);
           setShowMatchModal(true);
           
-          console.log("Match modal state - showMatchModal: true, matchedUser:", matchedUserData.name, "userId:", matchedUserData.userId);
-          
-          // Don't advance yet - wait for user to close modal
-          return;
+          console.log("Match modal state - showMatchModal: true, matchedUser:", matchName, "userId:", matchUserId);
         } else {
           // Not a match yet - just a like (pending)
-          const likedName = displayMatches[index]?.name || "them";
-          console.log("You liked", likedName, "- waiting for them to like you back");
+          console.log("You liked", matchName, "- waiting for them to like you back");
           
-          // Show "like sent" modal - ensure name is set before showing modal
-          setLikedUserName(likedName);
+          // Remove liked user from matches array (they've been liked, don't show again)
+          setMatches(prevMatches => {
+            const filtered = prevMatches.filter(m => m.userId !== matchUserId);
+            console.log(`[MatchList] Removed liked user ${matchName} from matches. Remaining: ${filtered.length}`);
+            return filtered;
+          });
+          setFilteredMatches(prevFiltered => {
+            const filtered = prevFiltered.filter(m => m.userId !== matchUserId);
+            console.log(`[MatchList] Removed liked user ${matchName} from filteredMatches. Remaining: ${filtered.length}`);
+            return filtered;
+          });
+          
+          // Adjust index after removing the liked user
+          setTimeout(() => {
+            setCurrentIndex(prevIndex => {
+              const displayMatches = showFilters ? matches : filteredMatches;
+              if (prevIndex >= displayMatches.length) {
+                return Math.max(0, displayMatches.length - 1);
+              }
+              return prevIndex; // Stay at same index (which now points to next user)
+            });
+          }, 0);
+          
+          // Show "like sent" modal with captured name
+          setLikedUserName(matchName);
           // Use setTimeout to ensure state is updated before showing modal
           setTimeout(() => {
             setShowLikeSentModal(true);
           }, 0);
-          
-          // Don't advance yet - wait for user to close modal
-          return;
         }
       } catch (err) {
         console.error("Error sending like:", err);
@@ -455,11 +597,7 @@ function MatchList() {
       }
     } else if (direction === 'left') {
       // Pass - send pass to backend
-      const userId = localStorage.getItem("userId");
-      const displayMatches = showFilters ? matches : filteredMatches;
-      const matchUserId = displayMatches[index].userId;
-      
-      console.log(`Sending pass from ${userId} to ${matchUserId}`);
+      console.log(`Sending pass from ${userId} to ${matchUserId} (${matchName})`);
       
       try {
         await axios.post("http://localhost:5001/api/pass", {
@@ -467,28 +605,34 @@ function MatchList() {
           toUser: matchUserId
         });
         console.log("Pass sent successfully");
+        
+        // Remove passed user from matches array (they've been passed, don't show again)
+        setMatches(prevMatches => {
+          const filtered = prevMatches.filter(m => m.userId !== matchUserId);
+          console.log(`[MatchList] Removed passed user ${matchName} from matches. Remaining: ${filtered.length}`);
+          return filtered;
+        });
+        setFilteredMatches(prevFiltered => {
+          const filtered = prevFiltered.filter(m => m.userId !== matchUserId);
+          console.log(`[MatchList] Removed passed user ${matchName} from filteredMatches. Remaining: ${filtered.length}`);
+          return filtered;
+        });
+        
+        // Adjust index after removing the passed user
+        setTimeout(() => {
+          setCurrentIndex(prevIndex => {
+            const displayMatches = showFilters ? matches : filteredMatches;
+            if (prevIndex >= displayMatches.length) {
+              return Math.max(0, displayMatches.length - 1);
+            }
+            return prevIndex; // Stay at same index (which now points to next user)
+          });
+        }, 0);
       } catch (err) {
         console.error("Error sending pass:", err);
         console.error("Error response:", err.response?.data);
       }
     }
-    
-    // Move to next match after a short delay with animation
-    // Use functional update to get the latest currentIndex
-    setTimeout(() => {
-      setCurrentIndex(prevIndex => {
-        const nextIndex = prevIndex + 1;
-        const displayMatches = showFilters ? matches : filteredMatches;
-        console.log(`Moving from index ${prevIndex} to ${nextIndex}`);
-        if (nextIndex < displayMatches.length) {
-          // Trigger animation by briefly setting opacity to 0, then back to 1
-          return nextIndex;
-        } else {
-          console.log("No more matches");
-          return prevIndex; // Stay at current if no more matches
-        }
-      });
-    }, 400); // Slightly longer delay for smoother animation
   };
 
   const outOfFrame = (name) => {
@@ -537,23 +681,142 @@ function MatchList() {
     });
   };
 
-  // Show Gemini loading screen when first loading matches
-  if (showGeminiLoading || loading) {
-    return <GeminiLoading message="Gemini is finding matches for you" />;
-  }
-
-  if (matches.length === 0) {
+  // CRITICAL: Show mode selection FIRST - before any other rendering
+  // This must be the first check and return early
+  if (showModeSelection) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col justify-center items-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col items-center justify-center p-6">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ top: '20%', left: '20%' }}></div>
-          <div className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse" style={{ bottom: '20%', right: '20%', animationDelay: '1s' }}></div>
+          <div
+            className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${mousePosition.y * 0.3}%`,
+              left: `${mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+            }}
+          />
+          <div
+            className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+            style={{
+              top: `${100 - mousePosition.y * 0.3}%`,
+              right: `${100 - mousePosition.x * 0.3}%`,
+              transition: "all 0.3s ease-out",
+              animationDelay: "1s",
+            }}
+          />
         </div>
-        <div className="relative z-10 text-center">
-          <div className="text-6xl mb-6">💔</div>
-          <h2 className="text-3xl font-bold text-white mb-2">No matches found yet</h2>
-          <p className="text-white/70 text-lg">Try updating your preferences!</p>
+        <div className="relative z-10 w-full max-w-2xl">
+          <div className="relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20"></div>
+            <div className="relative bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
+              <h1 className="text-4xl font-bold mb-2 text-center bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Choose Matching Mode
+              </h1>
+              <p className="text-center text-white/70 mb-8">How would you like to find your matches?</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Preferences + Age/Location Mode */}
+                <button
+                  onClick={() => handleModeSelection("preferences")}
+                  className={`p-6 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 text-left group ${
+                    matchingMode === "preferences"
+                      ? "bg-white/10 border-purple-400/50 shadow-lg shadow-purple-500/20"
+                      : "bg-white/5 hover:bg-white/10 border-transparent hover:border-purple-400/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-2xl">
+                      🎯
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Smart Matching</h3>
+                  </div>
+                  <p className="text-white/80 mb-4">
+                    Match based on your entertainment preferences 
+                  </p>
+                  <div className="space-y-2 text-sm text-white/60">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>AI-powered compatibility scoring</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Age & location filters applied</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Higher compatibility scores</span>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Age/Location Only Mode */}
+                <button
+                  onClick={() => handleModeSelection("location")}
+                  className={`p-6 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 text-left group ${
+                    matchingMode === "location"
+                      ? "bg-white/10 border-pink-400/50 shadow-lg shadow-pink-500/20"
+                      : "bg-white/5 hover:bg-white/10 border-transparent hover:border-pink-400/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-2xl">
+                      📍
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Location-Based</h3>
+                  </div>
+                  <p className="text-white/80 mb-4">
+                    Match based only on age and location preferences. No entertainment preferences considered.
+                  </p>
+                  <div className="space-y-2 text-sm text-white/60">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Age range matching</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Distance-based filtering</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>More matches available</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  onClick={handleContinueWithMode}
+                  disabled={!matchingMode}
+                  className={`w-full px-6 py-3 rounded-xl text-white font-semibold transition-all duration-300 transform shadow-lg ${
+                    matchingMode
+                      ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 hover:scale-105 hover:shadow-xl cursor-pointer"
+                      : "bg-gray-600 cursor-not-allowed opacity-50"
+                  }`}
+                >
+                  Continue with {matchingMode === "location" ? "Location-Based" : "Smart"} Matching →
+                </button>
+                {matchingMode && (
+                  <p className="text-center text-white/50 text-xs mt-3">
+                    Selected: <span className="text-white/70 font-semibold">{matchingMode === "location" ? "Location-Based" : "Smart Matching"}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
