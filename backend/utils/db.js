@@ -10,23 +10,8 @@ async function getDb() {
     dbPromise = (async () => {
       const { Low } = await import("lowdb");
       const { JSONFile } = await import("lowdb/node");
-      const fs = await import("fs");
       
-      // Use environment variable for database path (for cloud deployments)
-      // Default to backend/db.json for local development
-      const dbPath = process.env.DB_PATH || path.join(__dirname, "../db.json");
-      const dbDir = path.dirname(dbPath);
-      
-      // Ensure directory exists
-      try {
-        if (!fs.existsSync(dbDir)) {
-          fs.mkdirSync(dbDir, { recursive: true });
-        }
-      } catch (err) {
-        console.warn(`[DB] Could not create directory ${dbDir}:`, err.message);
-      }
-      
-      const adapter = new JSONFile(dbPath);
+      const adapter = new JSONFile(path.join(__dirname, "../db.json"));
       const dbInstance = new Low(adapter, {
         users: [],
         tastes: [],
