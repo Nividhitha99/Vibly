@@ -173,21 +173,6 @@ function Navbar() {
               )}
             </Link>
             <Link
-              to="/jam-session"
-              className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                isActive("/jam-session")
-                  ? "bg-gradient-to-r from-yellow-500/90 to-orange-500/90 text-white shadow-lg shadow-yellow-500/30"
-                  : "text-white/80 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
-            >
-              <MusicIcon className="w-4 h-4" />
-              <span className="relative z-10">Jam</span>
-              {isActive("/jam-session") && (
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg blur-sm"></div>
-              )}
-            </Link>
-            <Link
               to="/watch-party"
               className={`relative px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
                 isActive("/watch-party")
@@ -314,19 +299,6 @@ function Navbar() {
               >
                 <ChatIcon className="w-5 h-5" />
                 Chat
-              </Link>
-              <Link
-                to="/jam-session"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  isActive("/jam-session")
-                    ? "bg-gradient-to-r from-yellow-500/90 to-orange-500/90 text-white shadow-lg"
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                }`}
-                style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
-              >
-                <MusicIcon className="w-5 h-5" />
-                Jam Session
               </Link>
               <Link
                 to="/watch-party"

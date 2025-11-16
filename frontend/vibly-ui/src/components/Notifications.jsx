@@ -61,12 +61,53 @@ function Notifications() {
       console.error("Error marking notification as read:", err);
     }
 
-    // Navigate to pending likes page
+    // Navigate based on notification type
     if (notification.type === "like") {
       navigate("/pending-likes");
+    } else if (notification.type === "jam-invite") {
+      // Handle jam invite - accept and navigate
+      handleAcceptJamInvite(notification);
     }
 
     setShowDropdown(false);
+  };
+
+  const handleAcceptJamInvite = async (notification) => {
+    try {
+      const res = await axios.post("http://localhost:5001/api/jam/accept", {
+        notificationId: notification.id,
+        userId: userId
+      });
+      
+      if (res.data.success && res.data.roomId) {
+        // Extract matchId from roomId (format: jam-userId1-userId2)
+        // UUIDs contain hyphens, so we need to extract them properly
+        const roomIdWithoutPrefix = res.data.roomId.replace("jam-", "");
+        
+        // UUIDs are 36 characters long (including hyphens)
+        // Find the position where the first UUID ends (after 36 chars)
+        // The second UUID starts after a hyphen following the first UUID
+        const uuidPattern = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
+        const matches = roomIdWithoutPrefix.match(uuidPattern);
+        
+        if (matches && matches.length === 2) {
+          // Find the other user ID (not the current user)
+          const otherUserId = matches.find(id => id !== userId);
+          
+          if (otherUserId) {
+            console.log("[Notifications] Extracted other user ID:", otherUserId);
+            navigate(`/jam-session?matchId=${otherUserId}&accepted=true`);
+          } else {
+            console.error("[Notifications] Could not find other user ID in room ID");
+          }
+        } else {
+          console.error("[Notifications] Could not parse room ID properly. Expected 2 UUIDs, found:", matches?.length || 0);
+        }
+      }
+    } catch (err) {
+      console.error("Error accepting jam invite:", err);
+      alert("Failed to accept jam session invite");
+    }
   };
 
   const handleMarkAllAsRead = async () => {
@@ -160,6 +201,29 @@ function Notifications() {
                         <p className="text-xs text-white/50 mt-1">
                           {new Date(notification.createdAt).toLocaleString()}
                         </p>
+                        {notification.type === "jam-invite" && !notification.read && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptJamInvite(notification);
+                                setShowDropdown(false);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs font-semibold"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationClick(notification);
+                              }}
+                              className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-xs"
+                            >
+                              Dismiss
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

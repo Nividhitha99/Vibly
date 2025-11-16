@@ -6,8 +6,8 @@
       "email": "nivedu99@gmail.com",
       "password": "$2b$10$rnqA8/B/yCIHkqW/q7a/keCKnfMTdmxOIpUQ9gBHj44YYEC5Yw..q",
       "ageRangeMin": 18,
-      "ageRangeMax": 53,
-      "maxDistance": 50,
+      "ageRangeMax": 45,
+      "maxDistance": 30,
       "age": 26,
       "gender": "female",
       "birthday": "1999-10-06",
@@ -120,9 +120,9 @@
       "maxDistance": 30,
       "birthday": "1985-02-17",
       "age": 40,
-      "region": "MD",
-      "location": "MD",
-      "city": "College Park",
+      "region": "Canada",
+      "location": "Canada",
+      "city": "Winnipeg",
       "gender": "female",
       "lookingFor": [
         "male",
@@ -139,9 +139,9 @@
       "maxDistance": 30,
       "birthday": "2004-10-17",
       "age": 21,
-      "region": "MD",
-      "location": "MD",
-      "city": "College Park",
+      "region": "Japan",
+      "location": "Japan",
+      "city": "Kyoto",
       "gender": "male",
       "lookingFor": "female"
     },
@@ -171,9 +171,9 @@
       "maxDistance": 30,
       "birthday": "1994-06-07",
       "age": 31,
-      "region": "MD",
-      "location": "MD",
-      "city": "College Park",
+      "region": "Canada",
+      "location": "Canada",
+      "city": "Calgary",
       "gender": "male",
       "lookingFor": "female"
     },
@@ -187,9 +187,9 @@
       "maxDistance": 30,
       "birthday": "1994-01-21",
       "age": 31,
-      "region": "MD",
-      "location": "MD",
-      "city": "College Park",
+      "region": "Germany",
+      "location": "Germany",
+      "city": "Berlin",
       "gender": "female",
       "lookingFor": "male"
     },
@@ -203,9 +203,9 @@
       "maxDistance": 30,
       "birthday": "1986-09-01",
       "age": 39,
-      "region": "MD",
-      "location": "MD",
-      "city": "College Park",
+      "region": "Germany",
+      "location": "Germany",
+      "city": "Frankfurt",
       "gender": "female",
       "lookingFor": "male"
     },
@@ -225,38 +225,7 @@
   "tastes": [
     {
       "userId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "movies": [
-        {
-          "id": 1248226,
-          "title": "Playdate",
-          "releaseDate": "2025-11-05",
-          "overview": "When out-of-work accountant Brian joins stay-at-home dad Jeff for a playdate with their sons, he expects a laid-back afternoon. Instead, they're chased by mercenaries, and Brian—totally unprepared—must survive one absurd obstacle after another.",
-          "posterPath": "https://image.tmdb.org/t/p/w200/fGodXWqJkkkbSebPIlxLSygV8GY.jpg",
-          "genreIds": [
-            28,
-            35,
-            10751
-          ],
-          "popularity": 369.57,
-          "voteAverage": 6.587,
-          "type": "movie"
-        },
-        {
-          "id": 1242898,
-          "title": "Predator: Badlands",
-          "releaseDate": "2025-11-05",
-          "overview": "Cast out from his clan, a young Predator finds an unlikely ally in a damaged android and embarks on a treacherous journey in search of the ultimate adversary.",
-          "posterPath": "https://image.tmdb.org/t/p/w200/ef2QSeBkrYhAdfsWGXmp0lvH0T1.jpg",
-          "genreIds": [
-            28,
-            878,
-            12
-          ],
-          "popularity": 294.6409,
-          "voteAverage": 7.291,
-          "type": "movie"
-        }
-      ],
+      "movies": [],
       "music": [],
       "shows": [],
       "weights": {
@@ -11489,41 +11458,6 @@
       "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
       "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "status": "pending"
-    },
-    {
-      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "toUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
-      "status": "confirmed"
-    },
-    {
-      "fromUser": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "toUser": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
-      "status": "pending"
-    },
-    {
-      "fromUser": "e14d1480-aea9-4174-85d3-baf73992c2b6",
-      "toUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "status": "confirmed"
-    },
-    {
-      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "toUser": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
-      "status": "pending"
-    },
-    {
-      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "toUser": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "status": "pending"
-    },
-    {
-      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "toUser": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "status": "pending"
-    },
-    {
-      "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "toUser": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "status": "pending"
     }
   ],
   "notifications": [
@@ -11591,7 +11525,7 @@
       "type": "like",
       "message": "Sam wants to connect with you!",
       "relatedUserId": "ff4c2d85-cafa-4307-9e1d-5e8ac47176cb",
-      "read": true,
+      "read": false,
       "createdAt": 1763248194706
     },
     {
@@ -12038,61 +11972,6 @@
       "createdAt": 1763253617245
     },
     {
-<<<<<<< HEAD
-      "id": "1763262485513lb0ny1xpi",
-      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
-      "type": "like",
-      "message": "Nivi wants to connect with you!",
-      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": true,
-      "createdAt": 1763262485513
-    },
-    {
-      "id": "17632625257389bvu59039",
-      "userId": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
-      "type": "like",
-      "message": "test2 wants to connect with you!",
-      "relatedUserId": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "read": false,
-      "createdAt": 1763262525738
-    },
-    {
-      "id": "1763262945781e67ieo72i",
-      "userId": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
-      "type": "like",
-      "message": "Nivi wants to connect with you!",
-      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": false,
-      "createdAt": 1763262945781
-    },
-    {
-      "id": "1763262949979kp9fdladg",
-      "userId": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "type": "like",
-      "message": "Nivi wants to connect with you!",
-      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": false,
-      "createdAt": 1763262949979
-    },
-    {
-      "id": "1763262952345g40x999h1",
-      "userId": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "type": "like",
-      "message": "Nivi wants to connect with you!",
-      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": false,
-      "createdAt": 1763262952345
-    },
-    {
-      "id": "176326295733838e0ytknz",
-      "userId": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "type": "like",
-      "message": "Nivi wants to connect with you!",
-      "relatedUserId": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
-      "read": false,
-      "createdAt": 1763262957338
-    },
-    {
       "id": "17632555052117z8z7u3px",
       "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "type": "jam-invite",
@@ -12347,11 +12226,6 @@
       "fromUser": "2bc81148-17cc-45cf-87c4-be9b55d8810a",
       "toUser": "0a0de768-164b-4669-9846-c98502190214",
       "passedAt": 1763253619044
-    },
-    {
-      "fromUser": "ebfe63db-fd2f-47a0-a1dc-349824326ec3",
-      "toUser": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
-      "passedAt": 1763262529912
     }
   ]
 }
