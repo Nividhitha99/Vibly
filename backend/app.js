@@ -17,11 +17,14 @@ const app = express();
 app.use(express.json());
 
 // GLOBAL CORS CONFIG - Allow multiple localhost ports for development
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002"
-];
+// In production, set ALLOWED_ORIGINS environment variable (comma-separated)
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002"
+    ];
 
 app.use(
   cors({

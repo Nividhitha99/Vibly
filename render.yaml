@@ -1,0 +1,42 @@
+# Render.com Blueprint Configuration
+# Deploy both backend and frontend with one click
+
+services:
+  # Backend Service
+  - type: web
+    name: vibly-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    rootDir: backend
+    envVars:
+      - key: GEMINI_KEY
+        value: AIzaSyC9f18CZUqQE4OEh3bYPtaKr0xTW9HVTcI
+      - key: TMDB_API_KEY
+        value: e3f340ed60a45e0fd320fb3e4b624b3c
+      - key: SPOTIFY_CLIENT_ID
+        value: ecd944e392f245a7a893dceacfca6834
+      - key: SPOTIFY_CLIENT_SECRET
+        value: 1e2c66214bae4630a2513415864bd993
+      - key: YOUTUBE_API_KEY
+        value: AIzaSyD1MV5ve8UtKrxLJNAdjQemTqe_3UzGRuo
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        sync: false  # Will be set after frontend is deployed
+
+  # Frontend Service
+  - type: web
+    name: vibly-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend/vibly-ui && npm install && npm run build
+    staticPublishPath: frontend/vibly-ui/build
+    rootDir: frontend/vibly-ui
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false  # Will be set to backend URL after deployment
+
