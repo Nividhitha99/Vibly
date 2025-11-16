@@ -19,14 +19,23 @@ function Notifications() {
     });
 
     socket.on("connect", () => {
-      console.log("Connected to socket for notifications");
+      console.log("✅ Connected to socket for notifications, userId:", userId);
       socket.emit("registerUser", userId);
+      console.log("📤 Emitted registerUser for userId:", userId);
     });
 
     socket.on("notification", (notification) => {
-      console.log("New notification received:", notification);
+      console.log("🔔 New notification received via socket:", notification);
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("❌ Socket connection error:", error);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("⚠️ Socket disconnected for notifications");
     });
 
     // Fetch existing notifications
@@ -61,9 +70,15 @@ function Notifications() {
       console.error("Error marking notification as read:", err);
     }
 
-    // Navigate to pending likes page
+    // Navigate based on notification type
     if (notification.type === "like") {
       navigate("/pending-likes");
+    } else if (notification.type === "watchParty" && notification.actionUrl) {
+      // Navigate to watch party using the actionUrl, mark as joining from notification
+      const url = notification.actionUrl.includes("?") 
+        ? `${notification.actionUrl}&fromNotification=true`
+        : `${notification.actionUrl}?fromNotification=true`;
+      navigate(url);
     }
 
     setShowDropdown(false);
@@ -79,10 +94,30 @@ function Notifications() {
     }
   };
 
+  // Refetch notifications when dropdown opens
+  const handleToggleDropdown = async () => {
+    const newState = !showDropdown;
+    setShowDropdown(newState);
+    
+    // If opening dropdown, refetch notifications to ensure we have the latest
+    if (newState) {
+      try {
+        const res = await axios.get(`http://localhost:5001/api/notifications/${userId}`);
+        setNotifications(res.data.notifications || []);
+        
+        const unreadRes = await axios.get(`http://localhost:5001/api/notifications/${userId}/unread-count`);
+        setUnreadCount(unreadRes.data.count || 0);
+        console.log("Notifications refetched:", res.data.notifications?.length || 0, "unread:", unreadRes.data.count || 0);
+      } catch (err) {
+        console.error("Error refetching notifications:", err);
+      }
+    }
+  };
+
   return (
     <div className="relative">
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={handleToggleDropdown}
         className="relative p-2 text-gray-300 hover:text-white focus:outline-none"
       >
         <svg

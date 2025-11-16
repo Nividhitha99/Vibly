@@ -725,9 +725,24 @@ function MatchList() {
 
               {/* Watch Party Button */}
               <button
-                onClick={() => {
+                onClick={async () => {
+                  // Send notification to the matched user before navigating
+                  const userId = localStorage.getItem("userId");
+                  if (userId && matchedUser.userId) {
+                    try {
+                      await axios.post("http://localhost:5001/api/watch-party/start", {
+                        userId,
+                        matchId: matchedUser.userId
+                      });
+                      console.log("✅ Watch party notification sent to", matchedUser.userId);
+                    } catch (err) {
+                      console.error("❌ Error sending watch party notification:", err);
+                      // Still navigate even if notification fails
+                    }
+                  }
                   handleCloseMatchModal();
-                  navigate(`/watch-party?matchId=${matchedUser.userId}`);
+                  // Add notificationSent parameter to prevent duplicate notification
+                  navigate(`/watch-party?matchId=${matchedUser.userId}&notificationSent=true`);
                 }}
                 className="w-full bg-white text-pink-600 hover:bg-gray-50 px-8 py-4 rounded-full text-lg font-bold shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-3xl flex items-center justify-center gap-2"
                 style={{
