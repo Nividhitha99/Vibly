@@ -397,6 +397,30 @@ function Chat() {
               </div>
               <div className="flex items-center gap-2">
                 <button
+                  onClick={async () => {
+                    const userId = localStorage.getItem("userId");
+                    if (userId && selectedConversation?.userId) {
+                      try {
+                        await axios.post("http://localhost:5001/api/watch-party/start", {
+                          userId,
+                          matchId: selectedConversation.userId
+                        });
+                        console.log("✅ Watch party notification sent to", selectedConversation.userId);
+                        navigate(`/watch-party?matchId=${selectedConversation.userId}&notificationSent=true`);
+                      } catch (err) {
+                        console.error("❌ Error sending watch party notification:", err);
+                        navigate(`/watch-party?matchId=${selectedConversation.userId}`);
+                      }
+                    }
+                  }}
+                  className="p-2 rounded-lg bg-purple-600/80 hover:bg-purple-600 text-white transition-all duration-300"
+                  title="Start Watch Party"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button
                   onClick={() => setShowAIHelper(!showAIHelper)}
                   className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-300"
                   title="AI Helper"

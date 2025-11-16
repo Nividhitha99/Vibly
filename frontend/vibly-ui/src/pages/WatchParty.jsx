@@ -34,16 +34,17 @@ function WatchParty() {
   const [watchPartyCode, setWatchPartyCode] = useState("");
   const [socketConnected, setSocketConnected] = useState(false);
   const messagesEndRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Fetch matched user info
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-          navigate("/login");
-          return;
-        }
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
 
         // Fetch current user
         const currentUserRes = await axios.get(`http://localhost:5001/api/user/${userId}`);
@@ -70,6 +71,19 @@ function WatchParty() {
 
     fetchUserInfo();
   }, [matchId, navigate]);
+
+  // Track mouse position for animated background
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Check if Scener extension is installed
   useEffect(() => {
@@ -526,26 +540,65 @@ function WatchParty() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen text-white text-xl bg-[#0f172a]">
-        Loading watch party...
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center text-white text-xl">
+        <div className="text-center">
+          <svg className="animate-spin h-12 w-12 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-white text-xl">Loading watch party...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 relative overflow-hidden flex flex-col">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute w-96 h-96 bg-blue-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${mousePosition.y * 0.3}%`,
+            left: `${mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+          }}
+        />
+        <div
+          className="absolute w-96 h-96 bg-purple-500 rounded-full opacity-10 blur-3xl animate-pulse"
+          style={{
+            top: `${100 - mousePosition.y * 0.3}%`,
+            right: `${100 - mousePosition.x * 0.3}%`,
+            transition: "all 0.3s ease-out",
+            animationDelay: "1s",
+          }}
+        />
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-white rounded-full opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800/50 backdrop-blur-sm">
+      <div className="relative z-10 p-4 border-b border-white/20 flex items-center justify-between bg-white/5 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-bold">🎬 Watch Party</h1>
+        <button
+          onClick={() => navigate(-1)}
+            className="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+        >
+          ← Back
+        </button>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">🎬 Watch Party</h1>
           {matchedUser && (
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="flex items-center gap-2 text-sm text-white/70">
               <span>with</span>
               <span className="text-white font-semibold">{matchedUser.name}</span>
             </div>
@@ -553,21 +606,21 @@ function WatchParty() {
         </div>
         <div className="flex items-center gap-4">
           {selectedContent && (
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-white/70">
               Now watching: <span className="text-white font-semibold">{selectedContent.title || selectedContent.name}</span>
             </div>
           )}
           <div className="flex gap-2">
             <button
               onClick={() => setShowJoinModal(true)}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white flex items-center gap-2"
             >
               ➕ Join
             </button>
             {matchId && (
               <button
                 onClick={() => setShowShareModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white flex items-center gap-2"
               >
                 📤 Share
               </button>
@@ -576,11 +629,11 @@ function WatchParty() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden p-6 gap-6">
         {/* Main Content Area */}
-        <div className="flex-1 p-6 flex flex-col">
+        <div className="flex-1 flex flex-col">
           {selectedContent ? (
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 shadow-2xl h-full flex flex-col">
+            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl h-full flex flex-col border border-white/20">
               {/* Content Poster/Image */}
               <div className="flex gap-6 mb-6">
                 {selectedContent.posterPath && (
@@ -694,9 +747,9 @@ function WatchParty() {
                         {showScenerInstructions ? 'Hide' : 'Show'} Instructions
                       </button>
                       {showScenerInstructions && (
-                        <div className="mt-4 p-4 bg-gray-800 rounded-lg text-left text-sm text-gray-300">
-                          <p className="font-semibold mb-2">How to use Scener:</p>
-                          <ol className="list-decimal list-inside space-y-2">
+                        <div className="mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-xl text-left text-sm text-white/80 border border-white/10">
+                          <p className="font-semibold mb-2 text-white">How to use Scener:</p>
+                          <ol className="list-decimal list-inside space-y-2 text-white/70">
                             <li>Install the Scener browser extension from scener.com</li>
                             <li>Open your streaming platform (Netflix, Hulu, Disney+, etc.)</li>
                             <li>Search for "{selectedContent.title || selectedContent.name}"</li>
@@ -749,20 +802,20 @@ function WatchParty() {
               <div className="flex gap-4 mt-4">
                 <button
                   onClick={browseContent}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-colors"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                 >
                   Add More Content
                 </button>
                 <button
                   onClick={() => navigate("/preferences")}
-                  className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-semibold transition-colors"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                 >
                   Go to Preferences
                 </button>
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-12 text-center h-full flex flex-col items-center justify-center shadow-2xl">
+            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-12 text-center h-full flex flex-col items-center justify-center shadow-2xl border border-white/20">
               <div className="text-8xl mb-6">🎬</div>
               <h2 className="text-3xl font-bold mb-4">No Content Selected</h2>
               <p className="text-gray-400 mb-8 max-w-md">
@@ -782,7 +835,7 @@ function WatchParty() {
                         onClick={() => addContentToList(item)}
                         className="cursor-pointer group transform transition-all hover:scale-105"
                       >
-                        <div className="bg-gray-700 rounded-lg overflow-hidden shadow-lg">
+                        <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/10">
                           {item.posterPath ? (
                             <img
                               src={item.posterPath}
@@ -790,12 +843,12 @@ function WatchParty() {
                               className="w-full aspect-[2/3] object-cover"
                             />
                           ) : (
-                            <div className="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-4xl">
+                            <div className="w-full aspect-[2/3] bg-white/5 flex items-center justify-center text-4xl">
                               🎬
                             </div>
                           )}
                           <div className="p-2">
-                            <p className="text-sm font-semibold truncate">{item.title || item.name}</p>
+                            <p className="text-sm font-semibold truncate text-white">{item.title || item.name}</p>
                           </div>
                         </div>
                       </div>
@@ -805,15 +858,15 @@ function WatchParty() {
               ) : null}
 
               <div className="flex gap-4 mt-8">
-                <button
+              <button
                   onClick={browseContent}
-                  className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg"
-                >
-                  Browse Content
-                </button>
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
+              >
+                Browse Content
+              </button>
                 <button
                   onClick={() => navigate("/preferences")}
-                  className="bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-lg"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 px-8 py-4 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                 >
                   Go to Preferences
                 </button>
@@ -823,12 +876,12 @@ function WatchParty() {
 
           {/* Selected Content List */}
           {selectedContentList.length > 0 && (
-            <div className="mt-6 bg-gray-800 rounded-2xl p-6">
+            <div className="mt-6 bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 shadow-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">Your Watch List ({selectedContentList.length})</h3>
                 <button
                   onClick={browseContent}
-                  className="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                  className="text-sm bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-4 py-2 rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white font-semibold"
                 >
                   + Add More
                 </button>
@@ -844,7 +897,7 @@ function WatchParty() {
                     }`}
                     onClick={() => selectContentToPlay(item)}
                   >
-                    <div className="bg-gray-700 rounded-lg overflow-hidden shadow-lg">
+                    <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/10">
                       {item.posterPath ? (
                         <img
                           src={item.posterPath}
@@ -852,13 +905,13 @@ function WatchParty() {
                           className="w-full aspect-[2/3] object-cover"
                         />
                       ) : (
-                        <div className="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-2xl">
+                        <div className="w-full aspect-[2/3] bg-white/5 flex items-center justify-center text-2xl">
                           🎬
                         </div>
                       )}
                       <div className="p-2">
-                        <p className="text-xs font-semibold truncate">{item.title || item.name}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs font-semibold truncate text-white">{item.title || item.name}</p>
+                        <p className="text-xs text-white/60 mt-1">
                           {item.type === "movie" || item.type === "movies" ? "🎬 Movie" : "📺 TV Show"}
                         </p>
                       </div>
@@ -888,11 +941,12 @@ function WatchParty() {
         </div>
 
         {/* Chat Sidebar */}
-        <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-700 flex flex-col bg-gray-800/30">
-          <div className="p-4 border-b border-gray-700 bg-gray-800/50">
-            <div className="flex items-center gap-3">
+        <div className="w-full lg:w-96 flex flex-col">
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 flex flex-col shadow-2xl border border-white/20 h-full">
+            <div className="mb-4">
+              <h2 className="text-xl font-bold mb-4 text-white">Chat</h2>
               {matchedUser && (
-                <>
+                <div className="flex items-center gap-3 mb-4">
                   {matchedUser.profileImages && matchedUser.profileImages.length > 0 ? (
                     <img
                       src={matchedUser.profileImages[0]}
@@ -906,138 +960,89 @@ function WatchParty() {
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                       {matchedUser.name?.charAt(0).toUpperCase() || '👤'}
                     </div>
                   )}
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold">{matchedUser.name}</h3>
+                    <h3 className="text-lg font-semibold text-white">{matchedUser.name}</h3>
                     <div className="flex items-center gap-2">
-                      <p className="text-xs text-gray-400">💬 Chat</p>
                       <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-green-500' : 'bg-red-500'}`} title={socketConnected ? 'Connected' : 'Disconnected'} />
-                      {roomId && (
-                        <p className="text-xs text-gray-500" title={`Room: ${roomId}`}>
-                          {roomId.slice(0, 8)}...
-                        </p>
-                      )}
+                      <span className="text-xs text-white/60">{socketConnected ? 'Connected' : 'Disconnected'}</span>
                     </div>
                   </div>
-                </>
-              )}
-              {!matchedUser && (
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">💬 Chat</h3>
-                  <div className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-green-500' : 'bg-red-500'}`} title={socketConnected ? 'Connected' : 'Disconnected'} />
                 </div>
               )}
             </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            
+            {/* Messages Display */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 flex-1 overflow-y-auto mb-4 min-h-[300px] max-h-[500px] border border-white/10">
             {messages.length === 0 ? (
-              <div className="text-center text-gray-400 mt-8">
-                <div className="text-4xl mb-2">💬</div>
+                <div className="text-center text-white/70 mt-8">
+                  <div className="text-4xl mb-2">💬</div>
                 <p className="text-sm">No messages yet. Start chatting!</p>
-                {matchedUser && (
-                  <p className="text-xs text-gray-500 mt-2">with {matchedUser.name}</p>
-                )}
+                  {matchedUser && (
+                    <p className="text-xs text-white/50 mt-2">with {matchedUser.name}</p>
+                  )}
               </div>
             ) : (
               messages.map((msg, idx) => {
-                const userId = localStorage.getItem("userId");
-                const isOwn = msg.senderId === userId;
-                const senderName = isOwn 
-                  ? (currentUser?.name || "You") 
-                  : (matchedUser?.name || "Match");
-                
+                  const userId = localStorage.getItem("userId");
+                  const isOwn = msg.senderId === userId;
+                  const senderName = isOwn 
+                    ? (currentUser?.name || "You") 
+                    : (matchedUser?.name || "Match");
+                  
                 return (
                   <div
                     key={idx}
-                    className={`flex items-end gap-2 ${isOwn ? "justify-end" : "justify-start"}`}
-                  >
-                    {!isOwn && matchedUser && (
-                      <div className="flex-shrink-0">
-                        {matchedUser.profileImages && matchedUser.profileImages.length > 0 ? (
-                          <img
-                            src={matchedUser.profileImages[0]}
-                            alt={matchedUser.name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : matchedUser.imageUrl ? (
-                          <img
-                            src={matchedUser.imageUrl}
-                            alt={matchedUser.name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                            {matchedUser.name?.charAt(0).toUpperCase() || '👤'}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
-                      {!isOwn && (
-                        <p className="text-xs text-gray-400 mb-1 px-2">{senderName}</p>
-                      )}
+                      className={`mb-3 ${
+                        msg.senderId === userId
+                          ? "text-right"
+                          : "text-left"
+                      }`}
+                    >
                       <div
-                        className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
-                          isOwn
-                            ? "bg-blue-600 text-white rounded-br-sm"
-                            : "bg-gray-700 text-gray-100 rounded-bl-sm"
+                        className={`inline-block p-3 rounded-2xl max-w-xs backdrop-blur-sm ${
+                          msg.senderId === userId
+                            ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+                            : "bg-white/10 text-white border border-white/20"
                         }`}
                       >
-                        <p className="break-words">{msg.message}</p>
-                        <p className="text-xs mt-1 opacity-70">
+                        {msg.senderId !== userId && (
+                          <p className="text-xs font-semibold mb-1 text-white/80">
+                            {senderName}
+                          </p>
+                        )}
+                        <p className="text-sm break-words text-white">{msg.message}</p>
+                        <p className={`text-xs mt-1 ${msg.senderId === userId ? 'text-white/70' : 'text-white/50'}`}>
                           {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { 
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}
-                        </p>
-                      </div>
+                      </p>
                     </div>
-                    {isOwn && currentUser && (
-                      <div className="flex-shrink-0">
-                        {currentUser.profileImages && currentUser.profileImages.length > 0 ? (
-                          <img
-                            src={currentUser.profileImages[0]}
-                            alt={currentUser.name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : currentUser.imageUrl ? (
-                          <img
-                            src={currentUser.imageUrl}
-                            alt={currentUser.name}
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">
-                            {currentUser.name?.charAt(0).toUpperCase() || 'You'}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })
             )}
-            <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 border-t border-gray-700 bg-gray-800/50">
+            {/* Message Input */}
             <div className="flex gap-2">
               <input
                 type="text"
+                placeholder="Type a message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 p-3 rounded-xl bg-white/10 backdrop-blur-sm text-white placeholder-white/40 border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all"
               />
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-2 rounded-lg transition text-sm font-semibold"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-6 py-3 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
               >
                 Send
               </button>
@@ -1049,18 +1054,18 @@ function WatchParty() {
       {/* Content Browser Modal */}
       {showContentBrowser && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowContentBrowser(false)}
         >
           <div 
-            className="bg-gray-800 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold">Browse Content</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Browse Content</h2>
                 {selectedContentList.length > 0 && (
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-white/70 mt-1">
                     {selectedContentList.length} item{selectedContentList.length !== 1 ? 's' : ''} in your watch list
                   </p>
                 )}
@@ -1068,13 +1073,13 @@ function WatchParty() {
               <div className="flex gap-2">
                 <button
                   onClick={() => navigate("/preferences")}
-                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                 >
                   Go to Preferences
                 </button>
                 <button
                   onClick={() => setShowContentBrowser(false)}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-white/60 hover:text-white text-2xl transition-colors"
                 >
                   ×
                 </button>
@@ -1089,10 +1094,10 @@ function WatchParty() {
                   setSearchQuery("");
                   setSearchResults([]);
                 }}
-                className={`px-4 py-2 rounded-lg font-semibold ${
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
                   contentType === "movies"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                    : "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20"
                 }`}
               >
                 🎬 Movies
@@ -1103,10 +1108,10 @@ function WatchParty() {
                   setSearchQuery("");
                   setSearchResults([]);
                 }}
-                className={`px-4 py-2 rounded-lg font-semibold ${
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
                   contentType === "tv"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                    : "bg-white/10 text-white/80 hover:bg-white/20 border border-white/20"
                 }`}
               >
                 📺 TV Shows
@@ -1120,14 +1125,14 @@ function WatchParty() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Search ${contentType === "movies" ? "movies" : "TV shows"}...`}
-                className="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white/10 backdrop-blur-sm text-white placeholder-white/40 px-4 py-3 rounded-xl border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all"
               />
             </div>
 
             {/* Results Grid */}
             {isSearching ? (
-              <div className="text-center text-gray-400 py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="text-center text-white/70 py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
                 <p className="mt-2">Searching...</p>
               </div>
             ) : searchResults.length > 0 ? (
@@ -1144,8 +1149,8 @@ function WatchParty() {
                         isInList ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'
                       }`}
                     >
-                      <div className={`bg-gray-700 rounded-lg overflow-hidden shadow-lg ${
-                        isInList ? 'ring-2 ring-green-500' : ''
+                      <div className={`bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/10 ${
+                        isInList ? 'ring-2 ring-green-400' : ''
                       }`}>
                         {item.posterPath ? (
                           <img
@@ -1154,29 +1159,29 @@ function WatchParty() {
                             className="w-full aspect-[2/3] object-cover group-hover:opacity-80 transition-opacity"
                           />
                         ) : (
-                          <div className="w-full aspect-[2/3] bg-gray-800 flex items-center justify-center text-4xl">
+                          <div className="w-full aspect-[2/3] bg-white/5 flex items-center justify-center text-4xl">
                             🎬
                           </div>
                         )}
                         <div className="p-3 relative">
                           {isInList && (
-                            <div className="absolute top-2 right-2 bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                               ✓
                             </div>
                           )}
-                          <p className="text-sm font-semibold truncate mb-1">{item.title || item.name}</p>
+                          <p className="text-sm font-semibold truncate mb-1 text-white">{item.title || item.name}</p>
                           {item.releaseDate && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-white/60">
                               {new Date(item.releaseDate).getFullYear()}
                             </p>
                           )}
                           {item.firstAirDate && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-white/60">
                               {new Date(item.firstAirDate).getFullYear()}
                             </p>
                           )}
                           {item.voteAverage && (
-                            <p className="text-xs text-gray-400">⭐ {item.voteAverage.toFixed(1)}</p>
+                            <p className="text-xs text-white/60">⭐ {item.voteAverage.toFixed(1)}</p>
                           )}
                         </div>
                       </div>
@@ -1185,7 +1190,7 @@ function WatchParty() {
                 })}
               </div>
             ) : (
-              <div className="text-center text-gray-400 py-12">
+              <div className="text-center text-white/70 py-12">
                 <div className="text-4xl mb-2">🔍</div>
                 <p>No results found. Try a different search term.</p>
               </div>
@@ -1197,18 +1202,18 @@ function WatchParty() {
       {/* Share Watch Party Modal */}
       {showShareModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowShareModal(false)}
         >
           <div 
-            className="bg-gray-800 rounded-2xl p-8 w-full max-w-md"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md shadow-2xl border border-white/20"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Share Watch Party</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Share Watch Party</h2>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-white/60 hover:text-white text-2xl transition-colors"
               >
                 ×
               </button>
@@ -1217,7 +1222,7 @@ function WatchParty() {
             <div className="space-y-6">
               {/* Share Link */}
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-300">
+                <label className="block text-sm font-semibold mb-2 text-white/80">
                   Share Link
                 </label>
                 <div className="flex gap-2">
@@ -1225,16 +1230,16 @@ function WatchParty() {
                     type="text"
                     readOnly
                     value={`${window.location.origin}/watch-party?matchId=${matchId}`}
-                    className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm"
+                    className="flex-1 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-sm border border-white/20"
                   />
                   <button
                     onClick={copyWatchPartyLink}
-                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                   >
                     Copy
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-white/60 mt-2">
                   Send this link to {matchedUser?.name || "your match"} to join the watch party
                 </p>
               </div>
@@ -1242,30 +1247,30 @@ function WatchParty() {
               {/* Watch Party Code */}
               {watchPartyCode && (
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-300">
+                  <label className="block text-sm font-semibold mb-2 text-white/80">
                     Watch Party Code
                   </label>
                   <div className="flex gap-2">
-                    <div className="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg text-center text-2xl font-bold tracking-wider">
+                    <div className="flex-1 bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-xl text-center text-2xl font-bold tracking-wider border border-white/20">
                       {watchPartyCode}
                     </div>
                     <button
                       onClick={copyWatchPartyCode}
-                      className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors"
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                     >
                       Copy
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-white/60 mt-2">
                     Share this code with {matchedUser?.name || "your match"} to join
                   </p>
                 </div>
               )}
 
               {/* Instructions */}
-              <div className="bg-gray-700 rounded-lg p-4">
-                <p className="text-sm font-semibold mb-2">How to join:</p>
-                <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                <p className="text-sm font-semibold mb-2 text-white">How to join:</p>
+                <ol className="text-xs text-white/70 space-y-1 list-decimal list-inside">
                   <li>Share the link or code with {matchedUser?.name || "your match"}</li>
                   <li>They can click the link or use the code to join</li>
                   <li>Both users will be in the same watch party room</li>
@@ -1280,18 +1285,18 @@ function WatchParty() {
       {/* Join Watch Party Modal */}
       {showJoinModal && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setShowJoinModal(false)}
         >
           <div 
-            className="bg-gray-800 rounded-2xl p-8 w-full max-w-md"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md shadow-2xl border border-white/20"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Join Watch Party</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Join Watch Party</h2>
               <button
                 onClick={() => setShowJoinModal(false)}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-white/60 hover:text-white text-2xl transition-colors"
               >
                 ×
               </button>
@@ -1300,7 +1305,7 @@ function WatchParty() {
             <div className="space-y-6">
               {/* Join by Link */}
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-300">
+                <label className="block text-sm font-semibold mb-2 text-white/80">
                   Join by Link
                 </label>
                 <div className="flex gap-2">
@@ -1309,23 +1314,23 @@ function WatchParty() {
                     value={joinLink}
                     onChange={(e) => setJoinLink(e.target.value)}
                     placeholder="Paste watch party link here..."
-                    className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm"
+                    className="flex-1 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 px-4 py-2 rounded-xl text-sm border border-white/20 focus:border-purple-400 focus:bg-white/15 focus:ring-2 focus:ring-purple-400/30 focus:outline-none transition-all"
                   />
                   <button
                     onClick={handleJoinByLink}
-                    className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold transition-colors"
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg text-white"
                   >
                     Join
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-white/60 mt-2">
                   Paste the watch party link you received
                 </p>
               </div>
 
               {/* Join by Code */}
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-300">
+                <label className="block text-sm font-semibold mb-2 text-white/80">
                   Join by Code (Coming Soon)
                 </label>
                 <div className="flex gap-2">
@@ -1334,26 +1339,26 @@ function WatchParty() {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     placeholder="Enter watch party code..."
-                    className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg text-sm uppercase"
+                    className="flex-1 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 px-4 py-2 rounded-xl text-sm uppercase border border-white/20"
                     disabled
                   />
                   <button
                     onClick={handleJoinByCode}
                     disabled
-                    className="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-white/5 hover:bg-white/10 px-6 py-2 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white border border-white/20"
                   >
                     Join
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-white/60 mt-2">
                   Code functionality coming soon. Use the link for now.
                 </p>
               </div>
 
               {/* Instructions */}
-              <div className="bg-gray-700 rounded-lg p-4">
-                <p className="text-sm font-semibold mb-2">How to join:</p>
-                <ol className="text-xs text-gray-300 space-y-1 list-decimal list-inside">
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                <p className="text-sm font-semibold mb-2 text-white">How to join:</p>
+                <ol className="text-xs text-white/70 space-y-1 list-decimal list-inside">
                   <li>Check your notifications for a watch party invitation</li>
                   <li>Click the notification to join automatically, or</li>
                   <li>Copy the watch party link and paste it here</li>
@@ -1364,6 +1369,18 @@ function WatchParty() {
           </div>
         </div>
       )}
+
+      {/* Custom Animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+          }
+        }
+      `}</style>
     </div>
   );
 }

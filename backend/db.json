@@ -11574,6 +11574,16 @@
       "fromUser": "68ff81db-99ed-41b5-9521-150158fa718d",
       "toUser": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
       "status": "pending"
+    },
+    {
+      "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "toUser": "68ff81db-99ed-41b5-9521-150158fa718d",
+      "status": "pending"
+    },
+    {
+      "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "toUser": "0a0de768-164b-4669-9846-c98502190214",
+      "status": "pending"
     }
   ],
   "notifications": [
@@ -12221,6 +12231,50 @@
       "data": null,
       "read": false,
       "createdAt": 1763272444943
+    },
+    {
+      "id": "1763273613092geikdfxxq",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "watchParty",
+      "message": "Reetu wants to start a watch party with you! Please join the link.",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "actionUrl": "/watch-party?matchId=487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": null,
+      "read": false,
+      "createdAt": 1763273613092
+    },
+    {
+      "id": "1763273649270502wlxyy2",
+      "userId": "68ff81db-99ed-41b5-9521-150158fa718d",
+      "type": "like",
+      "message": "Reetu wants to connect with you!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763273649270
+    },
+    {
+      "id": "1763273779019wbf6cgm8k",
+      "userId": "0a0de768-164b-4669-9846-c98502190214",
+      "type": "like",
+      "message": "Reetu wants to connect with you!",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "actionUrl": null,
+      "data": null,
+      "read": false,
+      "createdAt": 1763273779019
+    },
+    {
+      "id": "1763273930052kst4tm9pg",
+      "userId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
+      "type": "watchParty",
+      "message": "Reetu wants to start a watch party with you! Please join the link.",
+      "relatedUserId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "actionUrl": "/watch-party?matchId=487d671b-3343-4511-af54-0062b3cf80dd",
+      "data": null,
+      "read": false,
+      "createdAt": 1763273930052
     }
   ],
   "messages": [
@@ -12412,6 +12466,13 @@
       "senderId": "e14d1480-aea9-4174-85d3-baf73992c2b6",
       "message": "heyo whats up epdi iruka",
       "timestamp": 1763257880195
+    },
+    {
+      "id": "1763273627591",
+      "roomId": "487d671b-3343-4511-af54-0062b3cf80dd-watche14d1480-aea9-4174-85d3-baf73992c2b6",
+      "senderId": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "message": "Hi",
+      "timestamp": 1763273627591
     }
   ],
   "passes": [
@@ -12489,6 +12550,11 @@
       "fromUser": "68ff81db-99ed-41b5-9521-150158fa718d",
       "toUser": "d568fe75-529d-4bed-95cb-6b0de460fbe6",
       "passedAt": 1763272468494
+    },
+    {
+      "fromUser": "487d671b-3343-4511-af54-0062b3cf80dd",
+      "toUser": "fcd5ab8c-df47-40eb-935b-782ed327d15c",
+      "passedAt": 1763273652611
     }
   ]
 }
