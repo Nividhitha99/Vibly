@@ -67,6 +67,44 @@ exports.sendLike = async (req, res) => {
 
       await db.write();
       console.log(`[MatchStatus] Match confirmed between ${fromUser} and ${toUser}`);
+      
+      // Send match notifications to both users
+      try {
+        const fromUserData = await getUser(fromUser);
+        const toUserData = await getUser(toUser);
+        const io = getIO();
+        
+        if (fromUserData && toUserData) {
+          // Notify the person who just liked (fromUser) - they matched with toUser
+          const notificationToFromUser = await createNotification(
+            fromUser,
+            "match",
+            `🎉 It's a match! You and ${toUserData.name} liked each other!`,
+            toUser,
+            `/chat?matchId=${toUser}`
+          );
+          
+          // Notify the person who was already liked (toUser) - they matched with fromUser
+          const notificationToToUser = await createNotification(
+            toUser,
+            "match",
+            `🎉 It's a match! You and ${fromUserData.name} liked each other!`,
+            fromUser,
+            `/chat?matchId=${fromUser}`
+          );
+          
+          // Emit real-time notifications via Socket.IO
+          if (io && io.emitToUser) {
+            io.emitToUser(fromUser, "notification", notificationToFromUser);
+            io.emitToUser(toUser, "notification", notificationToToUser);
+            console.log(`✅ Match notifications sent to both users: ${fromUser} and ${toUser}`);
+          }
+        }
+      } catch (err) {
+        console.error("Error creating match notifications:", err);
+        // Don't fail the match if notification fails
+      }
+      
       return res.json({ success: true, match: "confirmed" });
     }
 
