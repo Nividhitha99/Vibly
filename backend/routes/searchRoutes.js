@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const tmdbService = require("../services/tmdbService");
 const spotifyService = require("../services/spotifyService");
+const youtubeService = require("../services/youtubeService");
 
 // Get movie genres
 router.get("/genres/movies", async (req, res) => {
@@ -132,6 +133,24 @@ router.get("/tracks", async (req, res) => {
     res.status(statusCode).json({ 
       error: error.message || "Failed to search tracks",
       details: "Please ensure SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET are set in your .env file"
+    });
+  }
+});
+
+// Search YouTube for a video
+router.get("/youtube", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ error: "Query parameter 'q' is required" });
+    }
+
+    const result = await youtubeService.searchVideo(q);
+    res.json(result);
+  } catch (error) {
+    console.error("YouTube search error:", error);
+    res.status(500).json({ 
+      error: error.message || "Failed to search YouTube"
     });
   }
 });

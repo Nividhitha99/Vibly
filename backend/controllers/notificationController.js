@@ -2,6 +2,7 @@ const getDb = require("../utils/db");
 const getUser = require("../services/userService").getUser;
 
 exports.createNotification = async (userId, type, message, relatedUserId = null, actionUrl = null) => {
+exports.createNotification = async (userId, type, message, relatedUserId = null, data = null) => {
   const db = await getDb();
   
   if (!db.data.notifications) {
@@ -15,6 +16,10 @@ exports.createNotification = async (userId, type, message, relatedUserId = null,
     message,
     relatedUserId,
     actionUrl, // URL to navigate to when notification is clicked
+    type, // "like", "match", "jam-invite", etc.
+    message,
+    relatedUserId,
+    data, // Additional data (e.g., roomId for jam invites)
     read: false,
     createdAt: Date.now()
   };

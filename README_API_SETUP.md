@@ -32,7 +32,7 @@ with your actual API key.
 2. Log in with your Spotify account
 3. Click "Create App"
 4. Fill in:
-   - App name: "Vibly" (or any name)
+   - App name: "Vibely" (or any name)
    - App description: "Entertainment matching app"
    - Redirect URI: `http://localhost:3000` (for now)
 5. Accept the terms and create

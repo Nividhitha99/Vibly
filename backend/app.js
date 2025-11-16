@@ -6,6 +6,7 @@ process.env.GEMINI_KEY = process.env.GEMINI_KEY || "AIzaSyDwAi9MThmlibUi7pjXr2qE
 process.env.TMDB_API_KEY = process.env.TMDB_API_KEY || "e3f340ed60a45e0fd320fb3e4b624b3c";
 process.env.SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "ecd944e392f245a7a893dceacfca6834";
 process.env.SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "1e2c66214bae4630a2513415864bd993";
+process.env.YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyD1MV5ve8UtKrxLJNAdjQemTqe_3UzGRuo";
 
 console.log("✓ API keys configured (using hardcoded values or .env if present)");
 
@@ -74,12 +75,14 @@ app.use("/api/ai", require("./routes/conversationRoutes"));
 app.use("/api/recommend", require("./routes/aiRecommendationRoutes"));
 app.use("/api/watchlist", require("./routes/watchListRoutes"));
 app.use("/api/match-status", require("./routes/matchStatusRoutes"));
+app.use("/api/pass", require("./routes/passRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
 app.use("/api/ai-chat", require("./routes/chatAIroutes"));
 app.use("/api/search", require("./routes/searchRoutes"));
 app.use("/api/follow", require("./routes/followRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/watch-party", require("./routes/watchPartyRoutes"));
+app.use("/api/jam", require("./routes/jamRoutes"));
 
 // HEALTH CHECK
 app.get("/health", (req, res) => {
