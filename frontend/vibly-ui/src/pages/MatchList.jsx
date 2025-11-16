@@ -23,6 +23,20 @@ function MatchList() {
   const [filteredMatches, setFilteredMatches] = useState([]);
   const [showGeminiLoading, setShowGeminiLoading] = useState(true);
   const [filtersInitialized, setFiltersInitialized] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Track mouse position for animated background
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Debug: Log when currentIndex changes
   useEffect(() => {
@@ -1189,6 +1203,7 @@ function MatchList() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
+      </div>
       </div>
 
       {/* Add CSS animations for card transitions */}
